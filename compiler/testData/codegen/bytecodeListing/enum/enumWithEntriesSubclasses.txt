@@ -1,0 +1,28 @@
+@kotlin.Metadata
+final class Foo$B {
+    inner class Foo$B
+    method <init>(p0: java.lang.String, p1: int): void
+    public final method foo(): void
+}
+
+@kotlin.Metadata
+final class Foo$C {
+    inner class Foo$C
+    method <init>(p0: java.lang.String, p1: int): void
+    public final method foo(): void
+}
+
+@kotlin.Metadata
+public enum class Foo {
+    private synthetic final static field $VALUES: Foo[]
+    public final static field A: Foo
+    public final static field B: Foo
+    public final static field C: Foo
+    inner class Foo$B
+    inner class Foo$C
+    static method <clinit>(): void
+    private method <init>(p0: java.lang.String, p1: int): void
+    public synthetic method <init>(p0: java.lang.String, p1: int, p2: Foo$B): void
+    public static method valueOf(p0: java.lang.String): Foo
+    public static method values(): Foo[]
+}

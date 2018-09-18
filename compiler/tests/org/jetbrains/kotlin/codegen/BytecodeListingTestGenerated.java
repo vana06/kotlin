@@ -249,6 +249,29 @@ public class BytecodeListingTestGenerated extends AbstractBytecodeListingTest {
         }
     }
 
+    @TestMetadata("compiler/testData/codegen/bytecodeListing/enum")
+    @TestDataPath("$PROJECT_ROOT")
+    @RunWith(JUnit3RunnerWithInners.class)
+    public static class Enum extends AbstractBytecodeListingTest {
+        private void runTest(String testDataFilePath) throws Exception {
+            KotlinTestUtils.runTest(this::doTest, TargetBackend.ANY, testDataFilePath);
+        }
+
+        public void testAllFilesPresentInEnum() throws Exception {
+            KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/testData/codegen/bytecodeListing/enum"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.ANY, true);
+        }
+
+        @TestMetadata("enumWithEntriesSubclasses.kt")
+        public void testEnumWithEntriesSubclasses() throws Exception {
+            runTest("compiler/testData/codegen/bytecodeListing/enum/enumWithEntriesSubclasses.kt");
+        }
+
+        @TestMetadata("enumWithEntriesSubclasses2.kt")
+        public void testEnumWithEntriesSubclasses2() throws Exception {
+            runTest("compiler/testData/codegen/bytecodeListing/enum/enumWithEntriesSubclasses2.kt");
+        }
+    }
+
     @TestMetadata("compiler/testData/codegen/bytecodeListing/inline")
     @TestDataPath("$PROJECT_ROOT")
     @RunWith(JUnit3RunnerWithInners.class)

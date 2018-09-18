@@ -57,6 +57,8 @@ import org.jetbrains.kotlin.resolve.jvm.jvmSignature.JvmMethodGenericSignature;
 import org.jetbrains.kotlin.resolve.jvm.jvmSignature.JvmMethodParameterKind;
 import org.jetbrains.kotlin.resolve.jvm.jvmSignature.JvmMethodParameterSignature;
 import org.jetbrains.kotlin.resolve.jvm.jvmSignature.JvmMethodSignature;
+import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter;
+import org.jetbrains.kotlin.resolve.scopes.MemberScope;
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedCallableMemberDescriptor;
 import org.jetbrains.kotlin.types.*;
 import org.jetbrains.kotlin.util.OperatorNameConventions;
@@ -1277,7 +1279,23 @@ public class KotlinTypeMapper {
             valueParameterTypes.forEach(type -> writeParameter(sw, type, f));
 
             if (f instanceof AccessorForConstructorDescriptor) {
-                writeParameter(sw, JvmMethodParameterKind.CONSTRUCTOR_MARKER, DEFAULT_CONSTRUCTOR_MARKER);
+                Type markerType = DEFAULT_CONSTRUCTOR_MARKER;
+                ClassDescriptor aClass = ((AccessorForConstructorDescriptor) f).getCalleeDescriptor().getContainingDeclaration();
+                if (isEnumClass(aClass)) {
+                    //generate synthetic accessor in runtime/stdlib independent way: don't use DEFAULT_CONSTRUCTOR_MARKER type
+                    Collection<DeclarationDescriptor> descriptors = aClass.getUnsubstitutedMemberScope()
+                            .getContributedDescriptors(DescriptorKindFilter.SINGLETON_CLASSIFIERS, MemberScope.Companion.getALL_NAME_FILTER());
+                    DeclarationDescriptor entry = CollectionsKt.firstOrNull(descriptors,
+                                                                                  descriptor ->
+                                                                                          descriptor instanceof ClassDescriptor &&
+                                                                                          enumEntryNeedSubclass(bindingContext,
+                                                                                                                (ClassDescriptor) descriptor));
+                    if (entry != null) {
+                        markerType = mapClass((ClassifierDescriptor) entry);
+                    }
+
+                }
+                writeParameter(sw, JvmMethodParameterKind.CONSTRUCTOR_MARKER, markerType);
             }
 
             if (OwnerKind.ERASED_INLINE_CLASS == kind) {
