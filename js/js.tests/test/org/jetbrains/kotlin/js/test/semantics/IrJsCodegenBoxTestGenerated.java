@@ -8178,6 +8178,16 @@ public class IrJsCodegenBoxTestGenerated extends AbstractIrJsCodegenBoxTest {
             KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/testData/codegen/box/enum"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.JS_IR, true);
         }
 
+        @TestMetadata("annotatedParameter.kt")
+        public void testAnnotatedParameter() throws Exception {
+            runTest("compiler/testData/codegen/box/enum/annotatedParameter.kt");
+        }
+
+        @TestMetadata("annotatedParameter2.kt")
+        public void testAnnotatedParameter2() throws Exception {
+            runTest("compiler/testData/codegen/box/enum/annotatedParameter2.kt");
+        }
+
         @TestMetadata("asReturnExpression.kt")
         public void testAsReturnExpression() throws Exception {
             runTest("compiler/testData/codegen/box/enum/asReturnExpression.kt");
