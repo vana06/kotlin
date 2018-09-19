@@ -1,6 +1,5 @@
 package org.jetbrains.kotlinx.serialization.compiler.resolve
 
-import org.jetbrains.kotlin.load.java.JvmAnnotationNames
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.annotations.KOTLINX_SERIALIZABLE_FQ_NAME
@@ -19,6 +18,8 @@ object SerializationAnnotations {
     internal val serialOptionalFqName = FqName("kotlinx.serialization.Optional")
     internal val serialTransientFqName = FqName("kotlinx.serialization.Transient")
     internal val serialInfoFqName = FqName("kotlinx.serialization.SerialInfo")
+
+    internal val contextualFqName = FqName("kotlinx.serialization.ContextualSerialization")
 }
 
 object SerialEntityNames {
