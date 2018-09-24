@@ -257,6 +257,9 @@ public class ControlStructureTypingVisitor extends ExpressionTypingVisitor {
         KtExpression condition = expression.getCondition();
         // Extract data flow info from condition itself without taking value into account
         DataFlowInfo dataFlowInfo = checkCondition(condition, context);
+        if (components.languageVersionSettings.supportsFeature(LanguageFeature.SoundSmartcastFromLoopConditionForLoopAssignedVariables)) {
+            dataFlowInfo = loopVisitor.clearDataFlowInfoForAssignedLocalVariables(dataFlowInfo, components.languageVersionSettings);
+        }
 
         KtExpression body = expression.getBody();
         KotlinTypeInfo bodyTypeInfo;
@@ -286,16 +289,9 @@ public class ControlStructureTypingVisitor extends ExpressionTypingVisitor {
             dataFlowInfo = dataFlowInfo.and(loopVisitor.clearDataFlowInfoForAssignedLocalVariables(bodyTypeInfo.getJumpFlowInfo(),
                                                                                                    components.languageVersionSettings));
         }
-
-        DataFlowInfo conservativeInfoAfterLoop =
-                components.languageVersionSettings.supportsFeature(LanguageFeature.SoundSmartcastFromLoopConditionForLoopAssignedVariables)
-                ? loopVisitor.clearDataFlowInfoForAssignedLocalVariables(dataFlowInfo, components.languageVersionSettings)
-                : dataFlowInfo;
-
-
         return components.dataFlowAnalyzer
                 .checkType(bodyTypeInfo.replaceType(components.builtIns.getUnitType()), expression, contextWithExpectedType)
-                .replaceDataFlowInfo(conservativeInfoAfterLoop);
+                .replaceDataFlowInfo(dataFlowInfo);
     }
 
     private boolean containsJumpOutOfLoop(@NotNull KtExpression expression, ExpressionTypingContext context) {
@@ -434,6 +430,13 @@ public class ControlStructureTypingVisitor extends ExpressionTypingVisitor {
             loopRangeInfo = TypeInfoFactoryKt.noTypeInfo(context);
         }
 
+
+        if (components.languageVersionSettings.supportsFeature(LanguageFeature.SoundSmartcastFromLoopConditionForLoopAssignedVariables)) {
+            DataFlowInfo oldInfo = loopRangeInfo.getDataFlowInfo();
+            DataFlowInfo newInfo = loopVisitor.clearDataFlowInfoForAssignedLocalVariables(oldInfo, components.languageVersionSettings);
+            loopRangeInfo = loopRangeInfo.replaceDataFlowInfo(newInfo);
+        }
+
         LexicalWritableScope loopScope = newWritableScopeImpl(context, LexicalScopeKind.FOR, components.overloadChecker);
 
         KtParameter loopParameter = expression.getLoopParameter();
@@ -466,14 +469,9 @@ public class ControlStructureTypingVisitor extends ExpressionTypingVisitor {
             bodyTypeInfo = loopRangeInfo;
         }
 
-        DataFlowInfo conservativeInfoAfterLoop =
-                components.languageVersionSettings.supportsFeature(LanguageFeature.SoundSmartcastFromLoopConditionForLoopAssignedVariables)
-                ? loopVisitor.clearDataFlowInfoForAssignedLocalVariables(loopRangeInfo.getDataFlowInfo(), components.languageVersionSettings)
-                : loopRangeInfo.getDataFlowInfo();
-
         return components.dataFlowAnalyzer
                 .checkType(bodyTypeInfo.replaceType(components.builtIns.getUnitType()), expression, contextWithExpectedType)
-                .replaceDataFlowInfo(conservativeInfoAfterLoop);
+                .replaceDataFlowInfo(loopRangeInfo.getDataFlowInfo());
     }
 
     private VariableDescriptor createLoopParameterDescriptor(
