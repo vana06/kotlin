@@ -364,7 +364,14 @@ object Generators : TemplateGroupBase() {
     } builder {
         operator(true)
 
-        doc { "Returns a list containing all elements of the original collection except the elements contained in the given [elements] collection." }
+        doc {
+            """
+            Returns a list containing all elements of the original collection except the elements contained in the given [elements] collection.
+
+            The [elements] collection may be converted to a HashSet to speed up the operation, thus the elements are required to have
+            correct and stable implementation of `hashCode()` that doesn't change between successive invocations.
+            """
+        }
         returns("List<T>")
         specialFor(Sets, Sequences) { returns("SELF") }
         body {
