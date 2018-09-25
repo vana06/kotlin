@@ -34,13 +34,27 @@ Helper functions for creating [Comparator][java.util.Comparator] instances.
 
 Utility functions for concurrent programming.
 
+# Package kotlin.contracts
+
+Experimental DSL for declaring custom function contracts.
+
+# Package kotlin.coroutines
+
+Library support for coroutines.
+
+# Package kotlin.coroutines.intrinsics
+
+Low-level building blocks for libraries that provide coroutine-based APIs.
+
 # Package kotlin.coroutines.experimental
 
-Library support for coroutines, including support for lazy sequences.
+Library support for experimental coroutines, provided for compatibility.
+It's recommended to migrate to `kotlin.coroutines` API.
 
 # Package kotlin.coroutines.experimental.intrinsics
 
-Low-level building blocks for libraries that provide coroutine-based APIs.
+Library support for experimental coroutines, provided for compatibility.
+It's recommended to migrate to `kotlin.coroutines.intrinsics` API.
 
 # Package kotlin.dom
 
