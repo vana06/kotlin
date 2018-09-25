@@ -119,7 +119,6 @@ fun assertFails(message: String?, block: () -> Unit): Throwable {
 }
 
 /** Asserts that a [block] fails with a specific exception of type [T] being thrown.
- *  Since inline method doesn't allow to trace where it was invoked, it is required to pass a [message] to distinguish this method call from others.
  *
  * If the assertion fails, the specified [message] is used unless it is null as a prefix for the failure message.
  */
