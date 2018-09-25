@@ -271,6 +271,9 @@ public abstract class Random {
  *
  * Two generators with the same seed produce the same sequence of values.
  *
+ * *Note:* at this point the repeatability of the sequences produced by this generator
+ * is not preserved across Kotlin versions.
+ *
  * @sample samples.random.Randoms.seededRandom
  */
 @SinceKotlin("1.3")
@@ -280,6 +283,9 @@ public fun Random(seed: Int): Random = XorWowRandom(seed, seed.shr(31))
  * Returns a repeatable random number generator seeded with the given [seed] `Long` value.
  *
  * Two generators with the same seed produce the same sequence of values.
+ *
+ * *Note:* at this point the repeatability of the sequences produced by this generator
+ * is not preserved across Kotlin versions.
  *
  * @sample samples.random.Randoms.seededRandom
  */
