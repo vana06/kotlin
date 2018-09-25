@@ -40,7 +40,8 @@ Experimental DSL for declaring custom function contracts.
 
 # Package kotlin.coroutines
 
-Library support for coroutines.
+Basic primitives for creating and suspending coroutines: [Continuation][kotlin.coroutines.Continuation], 
+[CoroutineContext][kotlin.coroutines.CoroutineContext] interfaces, coroutine creation and suspension top-level functions.
 
 # Package kotlin.coroutines.intrinsics
 
@@ -48,12 +49,12 @@ Low-level building blocks for libraries that provide coroutine-based APIs.
 
 # Package kotlin.coroutines.experimental
 
-Library support for experimental coroutines, provided for compatibility.
+Deprecated support for experimental coroutines, provided for compatibility.
 It's recommended to migrate to `kotlin.coroutines` API.
 
 # Package kotlin.coroutines.experimental.intrinsics
 
-Library support for experimental coroutines, provided for compatibility.
+Deprecated support for experimental coroutines, provided for compatibility.
 It's recommended to migrate to `kotlin.coroutines.intrinsics` API.
 
 # Package kotlin.dom
