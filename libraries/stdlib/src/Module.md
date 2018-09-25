@@ -87,6 +87,10 @@ The functions include trigonometric, hyperbolic, exponentiation and power, logar
 Standard implementations of delegates for [delegated properties](/docs/reference/delegated-properties.html)
 and helper functions for implementing custom delegates.
 
+# Package kotlin.random
+
+Provides the default generator of pseudo-random values, the repeatable generator, and a base class for other RNG implementations.
+
 # Package kotlin.ranges
 
 [Ranges](/docs/reference/ranges.html), Progressions and related top-level and extension functions.
