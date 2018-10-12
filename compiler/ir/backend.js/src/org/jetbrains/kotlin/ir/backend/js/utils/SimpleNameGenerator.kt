@@ -79,11 +79,13 @@ class SimpleNameGenerator : NameGenerator {
 
         "Error", "Object", "Number",
 
+        // TODO add "Function" and uncomment next things?
         // "Math", "String", "Boolean", "Date", "Array", "RegExp", "JSON",
 
         // global identifiers usually declared in know environments (node.js, browser, require.js, WebWorkers, etc)
         // "require", "define", "module", "window", "self",
 
+        // TODO remove
         // the special Kotlin object
         "Kotlin"
     )
