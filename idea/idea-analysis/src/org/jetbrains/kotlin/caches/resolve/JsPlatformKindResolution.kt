@@ -6,7 +6,7 @@
 package org.jetbrains.kotlin.caches.resolve
 
 import com.intellij.openapi.roots.libraries.PersistentLibraryKind
-import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.openapi.util.io.FileUtilRt
 import org.jetbrains.kotlin.analyzer.ResolverForModuleFactory
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.context.ProjectContext
@@ -17,8 +17,10 @@ import org.jetbrains.kotlin.js.resolve.JsPlatform
 import org.jetbrains.kotlin.platform.impl.JsIdePlatformKind
 
 class JsPlatformKindResolution : IdePlatformKindResolution {
-    override fun isLibraryFileForPlatform(virtualFile: VirtualFile): Boolean {
-        return virtualFile.extension == "js" || virtualFile.extension == "kjsm"
+
+    override fun isLibraryPathForPlatform(libraryPath: String): Boolean {
+        val extension = FileUtilRt.getExtension(libraryPath)
+        return extension == "js" || extension == "kjsm"
     }
 
     override val libraryKind: PersistentLibraryKind<*>?

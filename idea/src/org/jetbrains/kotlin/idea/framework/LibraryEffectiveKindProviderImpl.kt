@@ -9,14 +9,13 @@ import com.intellij.ProjectTopics
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ModuleRootEvent
 import com.intellij.openapi.roots.ModuleRootListener
-import com.intellij.openapi.roots.OrderRootType
 import com.intellij.openapi.roots.impl.libraries.LibraryEx
 import com.intellij.openapi.roots.libraries.PersistentLibraryKind
 import com.intellij.util.containers.SoftFactoryMap
 
 class LibraryEffectiveKindProviderImpl(project: Project) : LibraryEffectiveKindProvider {
     private val effectiveKindMap = object : SoftFactoryMap<LibraryEx, PersistentLibraryKind<*>?>() {
-        override fun create(key: LibraryEx) = detectLibraryKind(key.getFiles(OrderRootType.CLASSES))
+        override fun create(key: LibraryEx) = detectLibraryKind(key)
     }
 
     init {

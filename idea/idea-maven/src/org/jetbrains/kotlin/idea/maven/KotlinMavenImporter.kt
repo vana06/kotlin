@@ -113,7 +113,7 @@ class KotlinMavenImporter : MavenImporter(KOTLIN_PLUGIN_GROUP_ID, KOTLIN_PLUGIN_
                 modifiableModelsProvider.getModifiableRootModel(module).orderEntries().forEachLibrary { library ->
                     if ((library as LibraryEx).kind == null) {
                         val model = modifiableModelsProvider.getModifiableLibraryModel(library) as LibraryEx.ModifiableModelEx
-                        detectLibraryKind(model.getFiles(OrderRootType.CLASSES))?.let { model.kind = it }
+                        detectLibraryKind(library)?.let { model.kind = it }
                     }
                     true
                 }

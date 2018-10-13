@@ -19,7 +19,6 @@ package org.jetbrains.kotlin.caches.resolve
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.libraries.Library
 import com.intellij.openapi.roots.libraries.PersistentLibraryKind
-import com.intellij.openapi.vfs.VirtualFile
 import org.jetbrains.kotlin.analyzer.ResolverForModuleFactory
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.context.ProjectContext
@@ -35,7 +34,7 @@ interface IdePlatformKindResolution {
 
     fun createBuiltIns(settings: PlatformAnalysisSettings, projectContext: ProjectContext): KotlinBuiltIns
 
-    fun isLibraryFileForPlatform(virtualFile: VirtualFile): Boolean
+    fun isLibraryPathForPlatform(libraryPath: String): Boolean
 
     val libraryKind: PersistentLibraryKind<*>?
 

@@ -6,7 +6,7 @@
 package org.jetbrains.kotlin.caches.resolve
 
 import com.intellij.openapi.roots.libraries.PersistentLibraryKind
-import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.openapi.util.io.FileUtilRt
 import org.jetbrains.kotlin.analyzer.ResolverForModuleFactory
 import org.jetbrains.kotlin.analyzer.common.CommonAnalyzerFacade
 import org.jetbrains.kotlin.builtins.DefaultBuiltIns
@@ -18,9 +18,9 @@ import org.jetbrains.kotlin.platform.impl.CommonIdePlatformKind
 import org.jetbrains.kotlin.serialization.deserialization.MetadataPackageFragment
 
 class CommonPlatformKindResolution : IdePlatformKindResolution {
-    override fun isLibraryFileForPlatform(virtualFile: VirtualFile): Boolean {
-        return virtualFile.extension == MetadataPackageFragment.METADATA_FILE_EXTENSION
-    }
+
+    override fun isLibraryPathForPlatform(libraryPath: String) =
+        FileUtilRt.extensionEquals(libraryPath, MetadataPackageFragment.METADATA_FILE_EXTENSION)
 
     override val libraryKind: PersistentLibraryKind<*>?
         get() = CommonLibraryKind

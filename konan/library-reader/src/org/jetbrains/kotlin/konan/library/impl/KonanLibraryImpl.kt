@@ -28,7 +28,7 @@ internal class KonanLibraryImpl(
     // For unzipped libraries inPlace and realFiles are the same
     // providing files in the library directory.
 
-    private val layout = createKonanLibraryLayout(libraryFile, target)
+    private val layout by lazy { createKonanLibraryLayout(libraryFile, target) }
 
     override val libraryName: String by lazy { layout.inPlace { it.libraryName } }
 

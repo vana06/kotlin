@@ -90,7 +90,7 @@ class KotlinNonJvmSourceRootConverterProvider : ConverterProvider("kotlin-non-jv
 
         val platform by lazy {
             val explicitKind = explicitKind
-            val kind = if (explicitKind is KotlinLibraryKind) explicitKind else detectLibraryKind(getRoots())
+            val kind = if (explicitKind is KotlinLibraryKind) explicitKind else detectLibraryKind(getRoots(), emptyArray())
             kind?.platform ?: JvmPlatform
         }
 

@@ -50,7 +50,7 @@ class KotlinAndroidGradleLibraryDataService : AbstractProjectDataService<JavaMod
                     val library = modelsProvider.findLibraryByBinaryPath(dep.binaryPath) as LibraryEx? ?: continue
                     if (library.kind == null) {
                         val model = modelsProvider.getModifiableLibraryModel(library) as LibraryEx.ModifiableModelEx
-                        detectLibraryKind(model.getFiles(OrderRootType.CLASSES))?.let { model.kind = it }
+                        detectLibraryKind(library)?.let { model.kind = it }
                     }
                 }
             }

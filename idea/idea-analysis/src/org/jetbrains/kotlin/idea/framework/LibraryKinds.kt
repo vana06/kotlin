@@ -23,7 +23,11 @@ import com.intellij.openapi.roots.libraries.DummyLibraryProperties
 import com.intellij.openapi.roots.libraries.Library
 import com.intellij.openapi.roots.libraries.PersistentLibraryKind
 import com.intellij.openapi.util.io.JarUtil
-import com.intellij.openapi.vfs.*
+import com.intellij.openapi.vfs.JarFileSystem
+import com.intellij.openapi.vfs.VfsUtilCore
+import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.util.PathUtil.getLocalPath
+import com.intellij.util.PathUtil.toPresentableUrl
 import org.jetbrains.kotlin.caches.resolve.IdePlatformKindResolution
 import org.jetbrains.kotlin.idea.vfilefinder.KnownLibraryKindForIndex
 import org.jetbrains.kotlin.idea.vfilefinder.getLibraryKindForJar
@@ -65,23 +69,32 @@ fun getLibraryPlatform(project: Project, library: Library): TargetPlatform {
     return library.effectiveKind(project).platform
 }
 
-fun detectLibraryKind(roots: Array<VirtualFile>): PersistentLibraryKind<*>? {
-    val jarFile = roots.firstOrNull() ?: return null
-    if (jarFile.fileSystem is JarFileSystem) {
-        // TODO: Detect library kind for Jar file using IdePlatformKindResolution.
-        when (jarFile.getLibraryKindForJar()) {
-            KnownLibraryKindForIndex.COMMON -> return CommonLibraryKind
-            KnownLibraryKindForIndex.JS -> return JSLibraryKind
-            KnownLibraryKindForIndex.UNKNOWN -> {
-                /* Continue detection of library kind via IdePlatformKindResolution. */
+fun detectLibraryKind(library: Library) = with(library) {
+    detectLibraryKind(getFiles(OrderRootType.CLASSES), getUrls(OrderRootType.CLASSES))
+}
+
+// Library.getFiles() doesn't return VirtualFile for entries absent on the file system. But Library.getUrls() always does.
+// Therefore, let's take a look at both root virtual files and root URls.
+fun detectLibraryKind(rootFiles: Array<VirtualFile>, rootUrls: Array<String>): PersistentLibraryKind<*>? {
+
+    rootFiles.firstOrNull()?.let { firstFile ->
+        if (firstFile.fileSystem is JarFileSystem) {
+            // TODO: Detect library kind for Jar file using IdePlatformKindResolution.
+            when (firstFile.getLibraryKindForJar()) {
+                KnownLibraryKindForIndex.COMMON -> return CommonLibraryKind
+                KnownLibraryKindForIndex.JS -> return JSLibraryKind
+                KnownLibraryKindForIndex.UNKNOWN -> {
+                    /* Continue detection of library kind via IdePlatformKindResolution. */
+                }
             }
         }
     }
 
-    return IdePlatformKindResolution
-        .getInstances()
-        .firstOrNull { it.isLibraryFileForPlatform(jarFile) }
-        ?.libraryKind
+    val firstPath = rootFiles.firstOrNull()?.let { getLocalPath(it) }
+        ?: rootUrls.firstOrNull()?.let { toPresentableUrl(it) }
+        ?: return null
+
+    return IdePlatformKindResolution.getInstances().firstOrNull { it.isLibraryPathForPlatform(firstPath) }?.libraryKind
 }
 
 fun getLibraryJar(roots: Array<VirtualFile>, jarPattern: Pattern): VirtualFile? {

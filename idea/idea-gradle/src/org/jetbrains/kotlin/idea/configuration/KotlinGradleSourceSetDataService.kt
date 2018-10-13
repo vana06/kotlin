@@ -27,7 +27,6 @@ import com.intellij.openapi.externalSystem.service.project.manage.AbstractProjec
 import com.intellij.openapi.externalSystem.util.ExternalSystemApiUtil
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.roots.OrderRootType
 import com.intellij.openapi.roots.impl.libraries.LibraryEx
 import com.intellij.openapi.roots.impl.libraries.LibraryImpl
 import com.intellij.openapi.roots.libraries.PersistentLibraryKind
@@ -174,7 +173,7 @@ class KotlinGradleLibraryDataService : AbstractProjectDataService<LibraryData, V
 
             val modifiableModel = modelsProvider.getModifiableLibraryModel(ideLibrary) as LibraryEx.ModifiableModelEx
             if (anyNonJvmModules || ideLibrary.name?.looksAsNonJvmLibraryName() == true) {
-                detectLibraryKind(modifiableModel.getFiles(OrderRootType.CLASSES))?.let { modifiableModel.kind = it }
+                detectLibraryKind(ideLibrary)?.let { modifiableModel.kind = it }
             } else if (ideLibrary is LibraryImpl && (ideLibrary.kind === JSLibraryKind || ideLibrary.kind === CommonLibraryKind)) {
                 resetLibraryKind(modifiableModel)
             }
