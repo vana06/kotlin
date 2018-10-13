@@ -91,7 +91,7 @@ fun ScriptEngine.runAndRestoreContext(
 }
 
 fun ScriptEngine.runAndRestoreContext(
-    originalKeys: Set<String>,
+    originalKeys: Map<String, Any?>,
     f: ScriptEngine.(Bindings) -> Any?
 ): Any? {
     DelegatingBindings(getBindings(ScriptContext.ENGINE_SCOPE), originalKeys).use { b ->
@@ -107,7 +107,7 @@ abstract class AbstractNashornJsTestChecker {
 
     private var engineCache: ScriptEngine? = null
 
-    abstract val originalKeys: Set<String>
+    abstract val originalKeys: Map<String, Any?>
 
     protected val engine
         get() = engineCache ?: createScriptEngineForTest().also { engineCache = it }
@@ -182,10 +182,10 @@ abstract class AbstractNashornJsTestChecker {
 }
 
 object NashornJsTestChecker : AbstractNashornJsTestChecker() {
-    override val originalKeys: Set<String>
+    override val originalKeys: Map<String, Any?>
         get() = originalKeys_!!
 
-    private var originalKeys_: Set<String>? = null
+    private var originalKeys_: Map<String, Any?>? = null
 
     val SETUP_KOTLIN_OUTPUT = "kotlin.kotlin.io.output = new kotlin.kotlin.io.BufferedOutput();"
     private val GET_KOTLIN_OUTPUT = "kotlin.kotlin.io.output.buffer;"
@@ -211,17 +211,17 @@ object NashornJsTestChecker : AbstractNashornJsTestChecker() {
 
         engine.overrideAsserter()
 
-        originalKeys_ = engine.getBindings(ScriptContext.ENGINE_SCOPE).keys.toSet()
+        originalKeys_ = engine.getBindings(ScriptContext.ENGINE_SCOPE).toMap()
 
         return engine
     }
 }
 
 object NashornIrJsTestChecker : AbstractNashornJsTestChecker() {
-    override val originalKeys: Set<String>
+    override val originalKeys: Map<String, Any?>
         get() = originalKeys_!!
 
-    private var originalKeys_: Set<String>? = null
+    private var originalKeys_: Map<String, Any?>? = null
 
 
     override fun createScriptEngineForTest(): ScriptEngine {
@@ -232,7 +232,7 @@ object NashornIrJsTestChecker : AbstractNashornJsTestChecker() {
             "js/js.translator/testData/out/irBox/testRuntime.js"
         ).forEach { engine.loadFile(it) }
 
-        originalKeys_ = engine.getBindings(ScriptContext.ENGINE_SCOPE).keys.toSet()
+        originalKeys_ = engine.getBindings(ScriptContext.ENGINE_SCOPE).toMap()
 
         return engine
     }
@@ -253,7 +253,7 @@ object NashornIrJsTestChecker0 {
 //        eval("load('${path.replace('\\', '/')}');")
 //    }
 
-    private var originalKeys_: Set<String>? = null
+    private var originalKeys_: Map<String, Any?>? = null
 
     fun createScriptEngineForTest(): ScriptEngine {
         val engine = createScriptEngine()
@@ -276,7 +276,7 @@ object NashornIrJsTestChecker0 {
 //
 //        compiledRuntime!!.eval()
 
-        originalKeys_ = engine.getBindings(ScriptContext.ENGINE_SCOPE).keys.toSet()
+        originalKeys_ = engine.getBindings(ScriptContext.ENGINE_SCOPE).toMap()
         return engine
     }
 
@@ -334,7 +334,7 @@ object NashornIrJsTestChecker0 {
 
 private const val NASHORN_GLOBAL = "nashorn.global"
 
-private class DelegatingBindings(private val parent: Bindings, val originalKeys: Set<String>) : SimpleBindings(), Closeable {
+private class DelegatingBindings(private val parent: Bindings, val originalKeys: Map<String, Any?>) : SimpleBindings(), Closeable {
 //    private var global: Bindings? = parent
 
 //    private val originalKeys = parent.keys.toSet()
@@ -370,11 +370,14 @@ private class DelegatingBindings(private val parent: Bindings, val originalKeys:
 
     override fun close() {
         for (key in parent.keys) {
-            if (key !in originalKeys) {
-//                parent.remove(key)
-                // remove doesn't work :(
-                parent[key] = ScriptRuntime.UNDEFINED
-            }
+            parent[key] = originalKeys[key] ?: ScriptRuntime.UNDEFINED
+//            if (key in originalKeys) {
+//                parent[key] = originalKeys[key]
+//            } else {
+//                // parent.remove(key)
+//                // remove doesn't work :(
+//                parent[key] = ScriptRuntime.UNDEFINED
+//            }
         }
     }
 }
