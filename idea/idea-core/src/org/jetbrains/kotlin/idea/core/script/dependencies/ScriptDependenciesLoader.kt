@@ -22,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.script.experimental.dependencies.AsyncDependenciesResolver
 import kotlin.script.experimental.dependencies.DependenciesResolver
 import kotlin.script.experimental.dependencies.ScriptDependencies
+import kotlin.script.experimental.dependencies.ScriptReport
 
 abstract class ScriptDependenciesLoader(
     protected val file: VirtualFile,
@@ -71,25 +72,30 @@ abstract class ScriptDependenciesLoader(
     protected fun processResult(result: DependenciesResolver.ResolveResult) {
         loaders.remove(file)
 
-        ServiceManager.getService(project, ScriptReportSink::class.java)?.attachReports(file, result.reports)
-
         val newDependencies = result.dependencies?.adjustByDefinition(scriptDef) ?: return
         if (cache[file] != newDependencies) {
             if (shouldShowNotification() && cache[file] != null && !ApplicationManager.getApplication().isUnitTestMode) {
                 file.addScriptDependenciesNotificationPanel(newDependencies, project) {
-                    saveDependencies(newDependencies)
+                    saveDependencies(newDependencies, result.reports)
                 }
             } else {
-                saveDependencies(newDependencies)
+                saveDependencies(newDependencies, result.reports)
             }
         } else {
+            ServiceManager.getService(project, ScriptReportSink::class.java)?.attachReports(file, result.reports)
+
             if (shouldShowNotification()) {
                 file.removeScriptDependenciesNotificationPanel(project)
             }
         }
     }
 
-    private fun saveDependencies(dependencies: ScriptDependencies) {
+    private fun saveDependencies(
+        dependencies: ScriptDependencies,
+        reports: List<ScriptReport>
+    ) {
+        ServiceManager.getService(project, ScriptReportSink::class.java)?.attachReports(file, reports)
+
         if (shouldShowNotification()) {
             file.removeScriptDependenciesNotificationPanel(project)
         }
