@@ -165,10 +165,10 @@ abstract class AbstractNashornJsTestChecker {
         f: ScriptEngine.(Bindings) -> Any?
     ): Any? {
         // Recreate the engine once in a while
-//        if (engineUsageCnt++ > 100) {
-//            engineUsageCnt = 0
-//            engineCache = createScriptEngineForTest()
-//        }
+        if (engineUsageCnt++ > 100) {
+            engineUsageCnt = 0
+            engineCache = createScriptEngineForTest()
+        }
 
         beforeRun()
 
