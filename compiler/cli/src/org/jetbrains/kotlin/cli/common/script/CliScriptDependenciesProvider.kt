@@ -45,7 +45,7 @@ class CliScriptDependenciesProvider(private val project: Project) : ScriptDepend
             if (scriptDef != null) {
                 val result = scriptContentLoader.loadContentsAndResolveDependencies(scriptDef, file)
 
-                ServiceManager.getService(project, ScriptReportSink::class.java)?.attachReports(file, result.reports)
+                ServiceManager.getService(project, ScriptReportSink::class.java)?.attachReports(project, file, result.reports)
 
                 val deps = result.dependencies?.adjustByDefinition(scriptDef)
 

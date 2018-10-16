@@ -16,15 +16,27 @@
 
 package org.jetbrains.kotlin.idea.core.script
 
+import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.psi.PsiManager
+import com.intellij.ui.EditorNotifications
+import org.jetbrains.kotlin.idea.util.application.runReadAction
 import org.jetbrains.kotlin.script.ScriptReportSink
 import kotlin.script.experimental.dependencies.ScriptReport
 
 class IdeScriptReportSink : ScriptReportSink {
-    override fun attachReports(scriptFile: VirtualFile, reports: List<ScriptReport>) {
+    override fun attachReports(project: Project, scriptFile: VirtualFile, reports: List<ScriptReport>) {
         // TODO: persist errors between launches?
         scriptFile.putUserData(Reports, reports)
+
+        runReadAction {
+            PsiManager.getInstance(project).findFile(scriptFile)?.let { psiFile ->
+                DaemonCodeAnalyzer.getInstance(project).restart(psiFile)
+                EditorNotifications.getInstance(project).updateNotifications(scriptFile)
+            }
+        }
     }
 
     object Reports : Key<List<ScriptReport>>("KOTLIN_SCRIPT_REPORTS")

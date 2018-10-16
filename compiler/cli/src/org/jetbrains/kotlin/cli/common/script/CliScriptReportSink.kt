@@ -16,6 +16,7 @@
 
 package org.jetbrains.kotlin.cli.common.script
 
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageLocation
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
@@ -24,7 +25,7 @@ import org.jetbrains.kotlin.script.ScriptReportSink
 import kotlin.script.experimental.dependencies.ScriptReport
 
 class CliScriptReportSink(private val messageCollector: MessageCollector) : ScriptReportSink {
-    override fun attachReports(scriptFile: VirtualFile, reports: List<ScriptReport>) {
+    override fun attachReports(project: Project, scriptFile: VirtualFile, reports: List<ScriptReport>) {
         reports.forEach {
             messageCollector.report(it.severity.convertSeverity(), it.message, location(scriptFile, it.position))
         }

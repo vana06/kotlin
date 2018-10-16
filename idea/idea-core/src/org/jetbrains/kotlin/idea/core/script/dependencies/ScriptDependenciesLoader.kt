@@ -82,7 +82,7 @@ abstract class ScriptDependenciesLoader(
                 saveDependencies(newDependencies, result.reports)
             }
         } else {
-            ServiceManager.getService(project, ScriptReportSink::class.java)?.attachReports(file, result.reports)
+            ServiceManager.getService(project, ScriptReportSink::class.java)?.attachReports(project, file, result.reports)
 
             if (shouldShowNotification()) {
                 file.removeScriptDependenciesNotificationPanel(project)
@@ -94,7 +94,7 @@ abstract class ScriptDependenciesLoader(
         dependencies: ScriptDependencies,
         reports: List<ScriptReport>
     ) {
-        ServiceManager.getService(project, ScriptReportSink::class.java)?.attachReports(file, reports)
+        ServiceManager.getService(project, ScriptReportSink::class.java)?.attachReports(project, file, reports)
 
         if (shouldShowNotification()) {
             file.removeScriptDependenciesNotificationPanel(project)

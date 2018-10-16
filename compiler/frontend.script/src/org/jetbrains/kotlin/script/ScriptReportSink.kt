@@ -16,9 +16,10 @@
 
 package org.jetbrains.kotlin.script
 
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import kotlin.script.experimental.dependencies.ScriptReport
 
 interface ScriptReportSink {
-    fun attachReports(scriptFile: VirtualFile, reports: List<ScriptReport>)
+    fun attachReports(project: Project, scriptFile: VirtualFile, reports: List<ScriptReport>)
 }
