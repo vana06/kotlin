@@ -20,10 +20,14 @@ import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.compile.AbstractCompile
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.jvm.tasks.Jar
+import org.gradle.api.artifacts.Configuration
 import org.gradle.tooling.provider.model.ToolingModelBuilderRegistry
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmOptionsImpl
 import org.jetbrains.kotlin.gradle.dsl.KotlinSingleJavaTargetExtension
 import org.jetbrains.kotlin.gradle.dsl.kotlinExtension
+import org.jetbrains.kotlin.gradle.internal.Kapt3GradleSubplugin
+import org.jetbrains.kotlin.gradle.internal.Kapt3KotlinGradleSubplugin.Companion.findKaptConfiguration
+import org.jetbrains.kotlin.gradle.internal.Kapt3KotlinGradleSubplugin.Companion.findMainKaptConfiguration
 import org.jetbrains.kotlin.gradle.internal.Kapt3GradleSubplugin.Companion.getKaptGeneratedClassesDir
 import org.jetbrains.kotlin.gradle.internal.Kapt3KotlinGradleSubplugin
 import org.jetbrains.kotlin.gradle.internal.KaptVariantData
@@ -165,6 +169,9 @@ internal class Kotlin2JvmSourceSetProcessor(
 
         project.afterEvaluate { project ->
             val javaTask = javaSourceSet?.let { project.tasks.findByName(it.compileJavaTaskName) as JavaCompile }
+
+            checkKaptConfigurationUsage(project) { findMainKaptConfiguration(project) }
+            checkKaptConfigurationUsage(project) { project.findKaptConfiguration(kotlinCompilation.compilationName) }
 
             val subpluginEnvironment = SubpluginEnvironment.loadSubplugins(project, kotlinPluginVersion)
             val appliedPlugins = subpluginEnvironment.addSubpluginOptions(
@@ -667,10 +674,13 @@ abstract class AbstractAndroidProjectHandler<V>(private val kotlinConfigurationT
         ext.addExtension(KOTLIN_OPTIONS_DSL_NAME, kotlinOptions)
 
         project.afterEvaluate { project ->
+            checkKaptConfigurationUsage(project) { findMainKaptConfiguration(project) }
+
             forEachVariant(project) { variant ->
                 val variantName = getVariantName(variant)
                 val compilation = kotlinAndroidTarget.compilations.create(variantName)
                 setUpDependencyResolution(variant, compilation)
+                checkKaptConfigurationUsage(project) { project.findKaptConfiguration(variantName) }
             }
 
             val androidPluginIds = listOf(
@@ -835,6 +845,15 @@ internal fun createSyncOutputTask(
     project.logger.kotlinDebug { "Created task ${syncTask.path} to copy kotlin classes from $kotlinDir to $javaDir" }
 
     return syncTask
+}
+
+private fun checkKaptConfigurationUsage(project: Project, lazyConfiguration: () -> Configuration?) {
+    if (Kapt3GradleSubplugin.isEnabled(project)) return
+
+    val configuration = lazyConfiguration()
+    if (configuration != null && configuration.dependencies.isNotEmpty()) {
+        throw GradleException("'kotlin-kapt' plugin should be enabled in order to use the '${configuration.name}' configuration")
+    }
 }
 
 private fun SourceSet.clearJavaSrcDirs() {
