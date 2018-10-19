@@ -100,9 +100,14 @@ class BinaryJavaClass(
         if (access.isSet(Opcodes.ACC_SYNTHETIC)) return
         if (innerName == null || outerName == null) return
 
-        if (myInternalName == outerName) {
+        // Do not read InnerClasses attribute values where full name != outer + $ + inner; treat those classes as top level instead.
+        // This is possible for example for Groovy-generated $Trait$FieldHelper classes.
+        if (name == "$outerName$$innerName") {
             context.addInnerClass(name, outerName, innerName)
-            innerClassNameToAccess[context.mapInternalNameToClassId(name).shortClassName] = access
+
+            if (myInternalName == outerName) {
+                innerClassNameToAccess[context.mapInternalNameToClassId(name).shortClassName] = access
+            }
         }
     }
 
