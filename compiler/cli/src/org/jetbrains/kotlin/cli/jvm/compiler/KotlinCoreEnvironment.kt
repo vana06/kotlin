@@ -675,7 +675,7 @@ class KotlinCoreEnvironment private constructor(
                 registerService(KtLightClassForFacade.FacadeStubCache::class.java, KtLightClassForFacade.FacadeStubCache(this))
                 registerService(ModuleAnnotationsResolver::class.java, CliModuleAnnotationsResolver())
                 if (messageCollector != null) {
-                    registerService(ScriptReportSink::class.java, CliScriptReportSink(messageCollector))
+                    registerService(ScriptReportSink::class.java, CliScriptReportSink(messageCollector, this))
                 }
             }
         }

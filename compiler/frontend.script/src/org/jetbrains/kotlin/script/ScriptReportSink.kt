@@ -20,6 +20,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import kotlin.script.experimental.dependencies.ScriptReport
 
-interface ScriptReportSink {
-    fun attachReports(project: Project, scriptFile: VirtualFile, reports: List<ScriptReport>)
+abstract class ScriptReportSink(protected val project: Project) {
+    abstract fun attachReports(scriptFile: VirtualFile, reports: List<ScriptReport>)
 }
