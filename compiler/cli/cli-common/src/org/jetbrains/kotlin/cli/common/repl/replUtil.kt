@@ -24,27 +24,27 @@ import java.io.File
 import java.net.URLClassLoader
 
 // using '#' to avoid collisions with xml escaping
-internal val SOURCE_CHARS: List<String> = listOf("\r", "\n", "#")
-internal val XML_REPLACEMENTS: List<String> = listOf("#r", "#n", "#diez")
+internal val SOURCE_CHARS: List<String> = listOf("\n", "#")
+internal val XML_REPLACEMENTS: List<String> = listOf("#n", "#diez")
 
 internal val END_LINE: String = LineSeparator.getSystemLineSeparator().separatorString
-internal val XML_PREAMBLE = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+internal const val XML_PREAMBLE = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
 
-fun replUnescapeLineBreaks(s: String) = StringUtil.replace(s, XML_REPLACEMENTS, SOURCE_CHARS)
-fun replEscapeLineBreaks(s: String) = StringUtil.replace(s, SOURCE_CHARS, XML_REPLACEMENTS)
+fun String.replUnescapeLineBreaks() = StringUtil.replace(this, XML_REPLACEMENTS, SOURCE_CHARS)
+fun String.replEscapeLineBreaks() = StringUtil.replace(this, SOURCE_CHARS, XML_REPLACEMENTS)
 
-fun replOutputAsXml(s: String, escapeType: ReplEscapeType): String {
-    val escapedString = replEscapeLineBreaks(s)
-    return "$XML_PREAMBLE<output type=\"$escapeType\">${StringUtil.escapeXml(escapedString)}</output>"
+fun String.replOutputAsXml(escapeType: ReplEscapeType): String {
+    val escapedXml = StringUtil.escapeXml(replEscapeLineBreaks())
+    return "$XML_PREAMBLE<output type=\"$escapeType\">$escapedXml</output>"
 }
 
-fun replInputAsXml(s: String): String {
-    val unescapedString = replUnescapeLineBreaks(s)
-    return "$XML_PREAMBLE<input>${StringUtil.escapeXml(unescapedString)}</input>"
+fun String.replInputAsXml(): String {
+    val escapedXml = StringUtil.escapeXml(replEscapeLineBreaks())
+    return "$XML_PREAMBLE<input>$escapedXml</input>"
 }
 
-fun replAddLineBreak(s: String) = s + END_LINE
-fun replRemoveLineBreak(s: String) = s.trimEnd(*END_LINE.toCharArray())
+fun String.replAddLineBreak() = this + END_LINE
+fun String.replRemoveLineBreaksInTheEnd() = trimEnd(*END_LINE.toCharArray())
 
 fun makeScriptBaseName(codeLine: ReplCodeLine) =
         "Line_${codeLine.no}${if (codeLine.generation > REPL_CODE_LINE_FIRST_GEN) "_gen_${codeLine.generation}" else ""}"

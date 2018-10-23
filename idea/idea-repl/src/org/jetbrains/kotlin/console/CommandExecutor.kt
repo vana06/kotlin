@@ -48,7 +48,7 @@ class CommandExecutor(private val runner: KotlinConsoleRunner) {
         val processInputOS = processHandler.processInput ?: return logError(this::class.java, "<p>Broken process stream</p>")
         val charset = (processHandler as? BaseOSProcessHandler)?.charset ?: Charsets.UTF_8
 
-        val xmlRes = replInputAsXml(command)
+        val xmlRes = command.replInputAsXml()
 
         val bytes = ("$xmlRes\n").toByteArray(charset)
         processInputOS.write(bytes)

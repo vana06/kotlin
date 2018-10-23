@@ -96,7 +96,7 @@ class ReplFromTerminal(
     private fun one(next: WhatNextAfterOneLine): WhatNextAfterOneLine {
         var line = replConfiguration.commandReader.readLine(next) ?: return WhatNextAfterOneLine.QUIT
 
-        line = replUnescapeLineBreaks(line)
+        line = line.replUnescapeLineBreaks()
 
         if (line.startsWith(":") && (line.length == 1 || line[1] != ':')) {
             val notQuit = oneCommand(line.substring(1))

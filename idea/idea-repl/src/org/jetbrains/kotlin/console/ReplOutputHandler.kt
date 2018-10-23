@@ -75,7 +75,7 @@ class ReplOutputHandler(
 
         val root = output.firstChild as Element
         val outputType = ReplEscapeType.valueOfOrNull(root.getAttribute("type"))
-        val content = replUnescapeLineBreaks(root.textContent)
+        val content = root.textContent.replUnescapeLineBreaks()
 
         when (outputType) {
             INITIAL_PROMPT  -> buildWarningIfNeededBeforeInit(content)

@@ -79,7 +79,7 @@ class ReplSystemInWrapper(
         val unescapedXml = parseXml(xmlInput)
 
         return if (isReplScriptExecuting)
-            replUnescapeLineBreaks(unescapedXml)
+            unescapedXml.replUnescapeLineBreaks()
         else
             unescapedXml
     }

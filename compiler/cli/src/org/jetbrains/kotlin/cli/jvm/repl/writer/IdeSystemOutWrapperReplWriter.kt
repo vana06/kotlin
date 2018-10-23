@@ -37,7 +37,7 @@ class IdeSystemOutWrapperReplWriter(standardOut: PrintStream) : PrintStream(stan
     }
 
     private fun printWithEscaping(text: String, escapeType: ReplEscapeType = USER_OUTPUT) {
-        super.print(replAddLineBreak(replOutputAsXml(text, escapeType)))
+        super.print(text.replOutputAsXml(escapeType).replAddLineBreak())
     }
 
     override fun printlnWelcomeMessage(x: String) = printlnWithEscaping(x, INITIAL_PROMPT)

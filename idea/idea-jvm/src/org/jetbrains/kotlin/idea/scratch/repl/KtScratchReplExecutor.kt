@@ -21,7 +21,7 @@ import com.intellij.execution.process.OSProcessHandler
 import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.openapi.util.Key
 import org.jetbrains.kotlin.cli.common.repl.replInputAsXml
-import org.jetbrains.kotlin.cli.common.repl.replRemoveLineBreak
+import org.jetbrains.kotlin.cli.common.repl.replRemoveLineBreaksInTheEnd
 import org.jetbrains.kotlin.cli.common.repl.replUnescapeLineBreaks
 import org.jetbrains.kotlin.console.KotlinConsoleKeeper
 import org.jetbrains.kotlin.console.actions.logError
@@ -61,7 +61,7 @@ class KtScratchReplExecutor(file: ScratchFile) : ScratchExecutor(file) {
         val processInputOS = osProcessHandler.processInput ?: return logError(this::class.java, "<p>Broken execute stream</p>")
         val charset = osProcessHandler.charset ?: Charsets.UTF_8
 
-        val xmlRes = replInputAsXml(command)
+        val xmlRes = command.replInputAsXml()
 
         val bytes = ("$xmlRes\n").toByteArray(charset)
         processInputOS.write(bytes)
@@ -123,7 +123,7 @@ class KtScratchReplExecutor(file: ScratchFile) : ScratchExecutor(file) {
 
             val root = output.firstChild as Element
             val outputType = root.getAttribute("type")
-            val content = replRemoveLineBreak(replUnescapeLineBreaks(root.textContent)).replace("\r\n", "\n")
+            val content = root.textContent.replUnescapeLineBreaks().replRemoveLineBreaksInTheEnd()
 
             LOG.printDebugMessage("REPL output: $outputType $content")
 
