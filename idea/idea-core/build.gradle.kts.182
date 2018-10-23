@@ -22,7 +22,7 @@ dependencies {
     compile(commonDep("org.jetbrains.kotlinx", "kotlinx-coroutines-core")) { isTransitive = false }
     compile(commonDep("org.jetbrains.kotlinx", "kotlinx-coroutines-jdk8")) { isTransitive = false }
     compileOnly(intellijCoreDep()) { includeJars("intellij-core") }
-    compileOnly(intellijDep()) { includeJars("platform-api") }
+    compileOnly(intellijDep())
     compileOnly(intellijPluginDep("gradle"))
 }
 

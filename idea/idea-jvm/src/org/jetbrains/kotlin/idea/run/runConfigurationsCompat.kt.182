@@ -13,12 +13,12 @@ import org.jdom.Element
 
 // Generalized in 191
 // BUNCH: 191
-typealias RunConfigurationBaseAny = RunConfigurationBase<*>
+typealias RunConfigurationBaseAny = RunConfigurationBase
 
 // Generalized in 191
 // BUNCH: 191
-typealias ModuleBasedConfigurationAny = ModuleBasedConfiguration<*, *>
+typealias ModuleBasedConfigurationAny = ModuleBasedConfiguration<*>
 
 // Generalized in 191
 // BUNCH: 191
-typealias ModuleBasedConfigurationElement<T> = ModuleBasedConfiguration<T, Element>
+typealias ModuleBasedConfigurationElement<T> = ModuleBasedConfiguration<T>
