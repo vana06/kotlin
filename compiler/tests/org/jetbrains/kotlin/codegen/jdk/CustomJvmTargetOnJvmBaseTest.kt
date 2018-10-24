@@ -16,11 +16,11 @@ import org.junit.runners.Suite
  */
 
 @Suite.SuiteClasses(
-    BlackBoxCodegenTestGenerated::class,
+    /*BlackBoxCodegenTestGenerated::class,
     BlackBoxInlineCodegenTestGenerated::class,
-    CompileKotlinAgainstInlineKotlinTestGenerated::class,
-    CompileKotlinAgainstKotlinTestGenerated::class,
-    BlackBoxAgainstJavaCodegenTestGenerated::class
+    CompileKotlinAgainstInlineKotlinTestGenerated::class,*/
+    CompileKotlinAgainstKotlinTestGenerated::class/*,
+    BlackBoxAgainstJavaCodegenTestGenerated::class*/
 )
 abstract class CustomJvmTargetOnJvmBaseTest
 
