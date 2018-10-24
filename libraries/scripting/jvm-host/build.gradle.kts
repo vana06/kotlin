@@ -1,6 +1,4 @@
 
-import org.jetbrains.kotlin.gradle.dsl.Coroutines
-
 plugins {
     kotlin("jvm")
     id("jps-compatible")
@@ -17,6 +15,7 @@ dependencies {
     compileOnly(project(":compiler:cli"))
     compileOnly(intellijCoreDep())
     runtime(projectRuntimeJar(":kotlin-compiler"))
+    testCompile(project(":compiler:daemon-common"))
     testCompile(commonDep("junit"))
 }
 
@@ -24,8 +23,6 @@ sourceSets {
     "main" { projectDefault() }
     "test" { projectDefault() }
 }
-
-kotlin.experimental.coroutines = Coroutines.ENABLE
 
 standardPublicJars()
 
