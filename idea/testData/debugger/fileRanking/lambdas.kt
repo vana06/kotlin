@@ -1,4 +1,5 @@
 // DO_NOT_CHECK_CLASS_FQNAME
+// DISABLE_STRICT_MODE
 
 //FILE: a/a.kt
 package a
@@ -18,6 +19,7 @@ class A {
 
 //FILE: b/a.kt
 package b
+// Fake Line
 
 import a.block
 
