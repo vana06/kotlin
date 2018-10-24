@@ -54,6 +54,13 @@ class KotlinCompileContext(val jpsContext: CompileContext) {
     val testingLogger: TestingBuildLogger?
         get() = jpsContext.testingContext?.buildLogger
 
+    /**
+     * Flag to prevent rebuilding twice.
+     *
+     * TODO: looks like it is not required since cache version checking are refactored
+     */
+    val rebuildAfterCacheVersionChanged = RebuildAfterCacheVersionChangeMarker(dataManager)
+
     val targetsIndex: KotlinTargetsIndex = KotlinTargetsIndexBuilder(this).build()
 
     val targetsBinding
@@ -66,13 +73,6 @@ class KotlinCompileContext(val jpsContext: CompileContext) {
     val shouldCheckCacheVersions = System.getProperty(KotlinBuilder.SKIP_CACHE_VERSION_CHECK_PROPERTY) == null
 
     val hasKotlinMarker = HasKotlinMarker(dataManager)
-
-    /**
-     * Flag to prevent rebuilding twice.
-     *
-     * TODO: looks like it is not required since cache version checking are refactored
-     */
-    val rebuildAfterCacheVersionChanged = RebuildAfterCacheVersionChangeMarker(dataManager)
 
     var rebuildingAllKotlin = false
 
