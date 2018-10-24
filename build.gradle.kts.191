@@ -145,7 +145,7 @@ extra["intellijSeparateSdks"] = intellijSeparateSdks
 
 extra["IntellijCoreDependencies"] =
         listOf("annotations",
-               "asm-all-7.0-beta",
+               "asm-all-7.0-beta1",
                "guava",
                "jdom",
                "jna",
