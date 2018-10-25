@@ -42,26 +42,26 @@ abstract class AbstractKotlinSteppingTest : KotlinDebuggerTestBase() {
     }
 
     protected fun doCustomTest(path: String) {
-        val fileText = FileUtil.loadFile(File(path))
-        configureSettings(fileText)
-        createAdditionalBreakpoints(fileText)
-        createDebugProcess(path)
-
-        doStepping(path)
-
-        finish()
+        doTestImpl(path) {
+            doStepping(path)
+        }
     }
 
     private fun doTest(path: String, command: String) {
-        val fileText = FileUtil.loadFile(File(path))
+        doTestImpl(path) { fileText ->
+            val prefix = "// $command: "
+            val count = InTextDirectivesUtils.getPrefixedInt(fileText, prefix) ?: "1"
+            processSteppingInstruction("$prefix$count")
+        }
+    }
 
+    private fun doTestImpl(path: String, testActions: (fileText: String) -> Unit) {
+        val fileText = FileUtil.loadFile(File(path))
         configureSettings(fileText)
         createAdditionalBreakpoints(fileText)
         createDebugProcess(path)
 
-        val prefix = "// $command: "
-        val count = InTextDirectivesUtils.getPrefixedInt(fileText, prefix) ?: "1"
-        processSteppingInstruction("$prefix$count")
+        testActions(fileText)
 
         finish()
     }
