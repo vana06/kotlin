@@ -19,6 +19,7 @@ package org.jetbrains.kotlin.cli.jvm.compiler
 import com.intellij.codeInsight.ExternalAnnotationsManager
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.*
+import java.util.*
 
 class MockExternalAnnotationsManager : ExternalAnnotationsManager() {
     override fun chooseAnnotationsPlace(element: PsiElement): AnnotationPlace? = null
@@ -26,9 +27,16 @@ class MockExternalAnnotationsManager : ExternalAnnotationsManager() {
     override fun isExternalAnnotationWritable(listOwner: PsiModifierListOwner, annotationFQN: String): Boolean = false
     override fun isExternalAnnotation(annotation: PsiAnnotation): Boolean = false
 
-    override fun findExternalAnnotationsFiles(listOwner: PsiModifierListOwner): List<PsiFile>? = null
+    override fun findExternalAnnotationsFiles(listOwner: PsiModifierListOwner): MutableList<PsiFile>? = null
     override fun findExternalAnnotation(listOwner: PsiModifierListOwner, annotationFQN: String): PsiAnnotation? = null
+
+    override fun findExternalAnnotations(listOwner: PsiModifierListOwner, annotationFQN: String): MutableList<PsiAnnotation> = Collections.emptyList()
+
     override fun findExternalAnnotations(listOwner: PsiModifierListOwner): Array<out PsiAnnotation>? = null
+
+    override fun findDefaultConstructorExternalAnnotations(po: PsiClass): MutableList<PsiAnnotation> = Collections.emptyList()
+
+    override fun findDefaultConstructorExternalAnnotations(po: PsiClass, p: String): MutableList<PsiAnnotation> = Collections.emptyList()
 
     override fun annotateExternally(
         listOwner: PsiModifierListOwner,
