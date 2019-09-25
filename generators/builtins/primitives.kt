@@ -132,6 +132,9 @@ class GeneratePrimitives(out: PrintWriter) : BuiltInsSourceGenerator(out) {
 
             generateConversions(kind)
 
+            generateToString()
+            generateEquals()
+
             out.println("}\n")
         }
     }
@@ -151,6 +154,7 @@ class GeneratePrimitives(out: PrintWriter) : BuiltInsSourceGenerator(out) {
      * Returns zero if this value is equal to the specified other value, a negative number if it's less than other,
      * or a positive number if it's greater than other.
      */""")
+            out.println("    @CompileTimeCalculation")
             out.print("    public ")
             if (otherKind == thisKind) out.print("override ")
             out.println("operator fun compareTo(other: ${otherKind.capitalized}): Int")
@@ -176,6 +180,7 @@ class GeneratePrimitives(out: PrintWriter) : BuiltInsSourceGenerator(out) {
                 "mod" ->
                     out.println("    @Deprecated(\"Use rem(other) instead\", ReplaceWith(\"rem(other)\"), DeprecationLevel.ERROR)")
             }
+            out.println("    @CompileTimeCalculation")
             out.println("    public operator fun $name(other: ${otherKind.capitalized}): ${returnType.capitalized}")
         }
         out.println()
@@ -200,6 +205,7 @@ class GeneratePrimitives(out: PrintWriter) : BuiltInsSourceGenerator(out) {
             val returnType = if (kind in listOf(PrimitiveType.SHORT, PrimitiveType.BYTE, PrimitiveType.CHAR) &&
                                  name in listOf("unaryPlus", "unaryMinus")) "Int" else kind.capitalized
             out.println("    /** $doc */")
+            if (name !in listOf("inc", "dec")) out.println("    @CompileTimeCalculation")
             out.println("    public operator fun $name(): $returnType")
         }
         out.println()
@@ -208,6 +214,7 @@ class GeneratePrimitives(out: PrintWriter) : BuiltInsSourceGenerator(out) {
     private fun generateBitShiftOperators(className: String) {
         for ((name, doc) in shiftOperators) {
             out.println("    /** $doc */")
+            out.println("    @CompileTimeCalculation")
             out.println("    public infix fun $name(bitCount: Int): $className")
         }
     }
@@ -215,10 +222,12 @@ class GeneratePrimitives(out: PrintWriter) : BuiltInsSourceGenerator(out) {
         for ((name, doc) in bitwiseOperators) {
             out.println("    /** $doc */")
             since?.let { out.println("    @SinceKotlin(\"$it\")") }
+            out.println("    @CompileTimeCalculation")
             out.println("    public infix fun $name(other: $className): $className")
         }
         out.println("    /** Inverts the bits in this value. */")
         since?.let { out.println("    @SinceKotlin(\"$it\")") }
+        out.println("    @CompileTimeCalculation")
         out.println("    public fun inv(): $className")
         out.println()
     }
@@ -367,6 +376,7 @@ class GeneratePrimitives(out: PrintWriter) : BuiltInsSourceGenerator(out) {
                 "    /**\n     * Converts this [$thisName] value to [$otherName].\n     *\n" + detail.replaceIndent("     ")
             }
             out.println(doc)
+            out.println("    @CompileTimeCalculation")
             out.println("    public override fun to$otherName(): $otherName")
         }
     }
@@ -378,5 +388,17 @@ class GeneratePrimitives(out: PrintWriter) : BuiltInsSourceGenerator(out) {
         require(kind1 != PrimitiveType.BOOLEAN) { "kind1 must not be BOOLEAN" }
         require(kind2 != PrimitiveType.BOOLEAN) { "kind2 must not be BOOLEAN" }
         return maxByDomainCapacity(maxByDomainCapacity(kind1, kind2), PrimitiveType.INT)
+    }
+
+    private fun generateToString() {
+        out.println()
+        out.println("    @CompileTimeCalculation")
+        out.println("    public override fun toString(): String")
+    }
+
+    private fun generateEquals() {
+        out.println()
+        out.println("    @CompileTimeCalculation")
+        out.println("    public override fun equals(other: Any?): Boolean")
     }
 }
