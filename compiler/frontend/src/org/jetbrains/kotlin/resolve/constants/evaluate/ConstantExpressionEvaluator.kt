@@ -17,6 +17,7 @@ import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.lexer.KtTokens
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.getStrictParentOfType
@@ -1079,20 +1080,20 @@ private fun getReceiverExpressionType(resolvedCall: ResolvedCall<*>): KotlinType
     }
 }
 
-internal class CompileTimeType<T>(val name: String) {
+class CompileTimeType<T>(val name: String) {
     override fun toString() = name
 }
 
-internal val BYTE = CompileTimeType<Byte>("Byte")
-internal val SHORT = CompileTimeType<Short>("Short")
-internal val INT = CompileTimeType<Int>("Int")
-internal val LONG = CompileTimeType<Long>("Long")
-internal val DOUBLE = CompileTimeType<Double>("Double")
-internal val FLOAT = CompileTimeType<Float>("Float")
-internal val CHAR = CompileTimeType<Char>("Char")
-internal val BOOLEAN = CompileTimeType<Boolean>("Boolean")
-internal val STRING = CompileTimeType<String>("String")
-internal val ANY = CompileTimeType<Any>("Any")
+val BYTE = CompileTimeType<Byte>("Byte")
+val SHORT = CompileTimeType<Short>("Short")
+val INT = CompileTimeType<Int>("Int")
+val LONG = CompileTimeType<Long>("Long")
+val DOUBLE = CompileTimeType<Double>("Double")
+val FLOAT = CompileTimeType<Float>("Float")
+val CHAR = CompileTimeType<Char>("Char")
+val BOOLEAN = CompileTimeType<Boolean>("Boolean")
+val STRING = CompileTimeType<String>("String")
+val ANY = CompileTimeType<Any>("Any")
 
 @Suppress("UNCHECKED_CAST")
 internal fun <A, B> binaryOperation(
