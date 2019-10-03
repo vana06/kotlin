@@ -9,6 +9,7 @@ dependencies {
     compile(project(":core:deserialization"))
     compile(project(":compiler:fir:cones"))
     compile(project(":compiler:fir:tree"))
+    compile(kotlinBuiltins()) //used to generate map for compile time calculations
 
     compileOnly(intellijCoreDep()) { includeJars("intellij-core", "guava", rootProject = rootProject) }
 
