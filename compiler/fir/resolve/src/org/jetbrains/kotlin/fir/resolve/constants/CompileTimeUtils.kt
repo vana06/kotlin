@@ -5,7 +5,6 @@
 
 package org.jetbrains.kotlin.fir.resolve.constants
 
-import javaslang.Function1
 import org.jetbrains.kotlin.fir.symbols.CallableId
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
@@ -13,6 +12,7 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.constants.evaluate.CompileTimeType
 
 val kotlinFqName = FqName("kotlin")
+val compileTimeAnnotation = FqName("kotlin.CompileTimeCalculation")
 
 data class CompileTimeFunction(val reference: CallableId, val args: List<ClassId>)
 
