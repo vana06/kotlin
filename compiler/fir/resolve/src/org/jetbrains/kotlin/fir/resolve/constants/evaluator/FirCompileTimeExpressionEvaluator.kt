@@ -89,6 +89,16 @@ class FirCompileTimeExpressionEvaluator : FirVisitor<FirExpression, Nothing?>() 
         }
     }
 
+    override fun visitBinaryLogicExpression(binaryLogicExpression: FirBinaryLogicExpression, data: Nothing?): FirExpression {
+        val leftOperand = (binaryLogicExpression.leftOperand.accept(this, data) as FirConstExpression<Boolean>).value
+        val rightOperand = (binaryLogicExpression.rightOperand.accept(this, data) as FirConstExpression<Boolean>).value
+
+        return when (binaryLogicExpression.kind) {
+            FirBinaryLogicExpression.OperationKind.AND -> leftOperand && rightOperand
+            FirBinaryLogicExpression.OperationKind.OR -> leftOperand && rightOperand
+        }.toFirConst(binaryLogicExpression.psi, binaryLogicExpression.typeRef)
+    }
+
     private fun Any.toFirConst(psi: PsiElement?, typeRef: FirTypeRef): FirConstExpression<*> {
         return when (this) {
             is Boolean -> FirConstExpressionImpl(psi, IrConstKind.Boolean, this)

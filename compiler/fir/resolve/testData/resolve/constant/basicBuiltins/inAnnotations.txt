@@ -1,0 +1,16 @@
+FILE: inAnnotations.kt
+    @R|kotlin/annotation/Target|(Q|kotlin/annotation/AnnotationTarget.FIELD|) public final annotation class SomeAnnotation : R|kotlin/Annotation| {
+        public constructor(toCompute: R|kotlin/Int|): R|SomeAnnotation| {
+            super<R|kotlin/Annotation|>()
+        }
+
+        public final val toCompute: R|kotlin/Int| = R|<local>/toCompute|
+            public get(): R|kotlin/Int|
+
+    }
+    @R|SomeAnnotation|(Int(3)) public final val temp: R|kotlin/Int| = Int(1)
+        public get(): R|kotlin/Int|
+    @R|SomeAnnotation|(Int(1).R|kotlin/Int.plus|(R|/temp|)) public final const val temp2: R|kotlin/Int| = Int(2)
+        public get(): R|kotlin/Int|
+    @R|SomeAnnotation|(Int(3)) public final val temp3: R|kotlin/Int| = Int(3)
+        public get(): R|kotlin/Int|

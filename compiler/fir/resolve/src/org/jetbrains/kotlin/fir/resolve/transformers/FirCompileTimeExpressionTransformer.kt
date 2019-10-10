@@ -29,6 +29,7 @@ open class FirCompileTimeExpressionTransformer : FirAbstractTreeTransformer(phas
 
     private fun FirExpression?.isCompileTimeComputable(): Boolean {
         if (this is FirConstExpression<*>) return true
+        if (this is FirBinaryLogicExpression) return this.leftOperand.isCompileTimeComputable() && this.rightOperand.isCompileTimeComputable()
         if (this !is FirResolvable) return false
         if (this is FirFunctionCall && !(this.dispatchReceiver.isCompileTimeComputable() && this.arguments.all { it.isCompileTimeComputable() }))
             return false
