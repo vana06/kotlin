@@ -19,5 +19,6 @@ fun FirResolvePhase.createTransformerByPhase(): FirTransformer<Nothing?> {
         STATUS -> FirStatusResolveTransformer()
         IMPLICIT_TYPES_BODY_RESOLVE -> FirImplicitTypeBodyResolveTransformerAdapter()
         BODY_RESOLVE -> FirBodyResolveTransformerAdapter()
+        COMPILE_TIME_EXPRESSION -> FirCompileTimeExpressionTransformer()
     }
 }

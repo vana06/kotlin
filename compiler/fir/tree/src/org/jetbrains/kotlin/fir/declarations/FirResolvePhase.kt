@@ -12,7 +12,8 @@ enum class FirResolvePhase {
     TYPES,
     STATUS,
     IMPLICIT_TYPES_BODY_RESOLVE,
-    BODY_RESOLVE;
+    BODY_RESOLVE,
+    COMPILE_TIME_EXPRESSION;
 
     val prev: FirResolvePhase get() = values()[ordinal - 1]
 
