@@ -10,18 +10,13 @@ import org.jetbrains.kotlin.backend.common.FileLoweringPass
 import org.jetbrains.kotlin.backend.common.interpreter.IrInterpreter
 import org.jetbrains.kotlin.backend.common.interpreter.builtins.compileTimeAnnotation
 import org.jetbrains.kotlin.ir.IrElement
-import org.jetbrains.kotlin.ir.IrStatement
-import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFile
-import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
-import org.jetbrains.kotlin.ir.expressions.impl.IrErrorExpressionImpl
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.IrElementVisitor
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class CompileTimeCalculationLowering(val context: CommonBackendContext) : FileLoweringPass {
@@ -64,6 +59,10 @@ private class Visitor : IrElementVisitor<Boolean, Nothing?> {
         }
 
         return false
+    }
+
+    override fun visitConstructorCall(expression: IrConstructorCall, data: Nothing?): Boolean {
+        return hasCompileCompileTimeAnnotation(expression.symbol.owner.annotations)
     }
 
     override fun <T> visitConst(expression: IrConst<T>, data: Nothing?): Boolean {
