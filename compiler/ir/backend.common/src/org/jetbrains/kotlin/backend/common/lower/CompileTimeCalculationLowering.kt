@@ -126,6 +126,14 @@ private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
     }
 
     override fun <T> visitConst(expression: IrConst<T>, data: Nothing?): Boolean = true
+
+    override fun visitWhen(expression: IrWhen, data: Nothing?): Boolean {
+        return expression.branches.all { it.accept(this, data) }
+    }
+
+    override fun visitBranch(branch: IrBranch, data: Nothing?): Boolean {
+        return branch.condition.accept(this, data) && branch.result.accept(this, data)
+    }
 }
 
 /**
