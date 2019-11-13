@@ -16,6 +16,7 @@ import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFile
+import org.jetbrains.kotlin.ir.declarations.IrVariable
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.ir.expressions.impl.IrErrorExpressionImpl
@@ -63,7 +64,7 @@ private class Transformer : IrElementTransformerVoid() {
 private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
     protected fun hasCompileCompileTimeAnnotation(annotations: List<IrConstructorCall>): Boolean {
         if (annotations.isNotEmpty()) {
-            return annotations.first().symbol.descriptor.containingDeclaration.fqNameSafe == compileTimeAnnotation
+            return annotations.any { it.symbol.descriptor.containingDeclaration.fqNameSafe == compileTimeAnnotation }
         }
         return false
     }
@@ -181,6 +182,14 @@ private class BodyVisitor : BasicVisitor() {
 
     override fun visitSetField(expression: IrSetField, data: Nothing?): Boolean {
         //todo check receiver?
+        return expression.value.accept(this, data)
+    }
+
+    override fun visitVariable(declaration: IrVariable, data: Nothing?): Boolean {
+        return declaration.initializer?.accept(this, data) ?: true
+    }
+
+    override fun visitSetVariable(expression: IrSetVariable, data: Nothing?): Boolean {
         return expression.value.accept(this, data)
     }
 }
