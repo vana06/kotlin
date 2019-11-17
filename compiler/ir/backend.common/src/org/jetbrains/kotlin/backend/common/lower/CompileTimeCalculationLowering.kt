@@ -10,6 +10,8 @@ import org.jetbrains.kotlin.backend.common.FileLoweringPass
 import org.jetbrains.kotlin.backend.common.interpreter.IrInterpreter
 import org.jetbrains.kotlin.backend.common.interpreter.builtins.compileTimeAnnotation
 import org.jetbrains.kotlin.backend.common.interpreter.getBody
+import org.jetbrains.kotlin.backend.common.interpreter.isAbstract
+import org.jetbrains.kotlin.backend.common.interpreter.isFakeOverridden
 import org.jetbrains.kotlin.builtins.DefaultBuiltIns
 import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
 import org.jetbrains.kotlin.ir.IrElement
@@ -105,7 +107,8 @@ private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
             val bodyComputable = when {
                 withoutBodyCheck -> true
                 expression.getBody() != null -> expression.getBody()!!.accept(this, null)
-                expression.symbol.owner.isFakeOverride -> visitOverridden(expression.symbol)
+                expression.isAbstract() -> true // todo make full check
+                expression.isFakeOverridden() -> visitOverridden(expression.symbol)
                 else -> true // todo find method in builtins
             }
             return dispatchReceiverComputable && extensionReceiverComputable && bodyComputable
