@@ -13,17 +13,14 @@ import org.jetbrains.kotlin.backend.common.interpreter.getBody
 import org.jetbrains.kotlin.backend.common.interpreter.isAbstract
 import org.jetbrains.kotlin.backend.common.interpreter.isFakeOverridden
 import org.jetbrains.kotlin.builtins.DefaultBuiltIns
-import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrStatement
-import org.jetbrains.kotlin.ir.declarations.IrField
-import org.jetbrains.kotlin.ir.declarations.IrFile
-import org.jetbrains.kotlin.ir.declarations.IrVariable
+import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.ir.expressions.impl.IrErrorExpressionImpl
 import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
-import org.jetbrains.kotlin.ir.util.isFakeOverride
+import org.jetbrains.kotlin.ir.util.parentAsClass
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.IrElementVisitor
@@ -61,13 +58,16 @@ private class Transformer : IrElementTransformerVoid() {
         }
         return declaration
     }
+
+    //todo annotation call
 }
 
 private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
-    protected fun hasCompileCompileTimeAnnotation(annotations: List<IrConstructorCall>): Boolean {
-        if (annotations.isNotEmpty()) {
-            return annotations.any { it.symbol.descriptor.containingDeclaration.fqNameSafe == compileTimeAnnotation }
+    protected fun hasCompileCompileTimeAnnotation(container: IrAnnotationContainer): Boolean {
+        if (container.annotations.isNotEmpty()) {
+            return container.annotations.any { it.symbol.descriptor.containingDeclaration.fqNameSafe == compileTimeAnnotation }
         }
+        if (container is IrDeclaration) return (container.parent as? IrClass)?.let { hasCompileCompileTimeAnnotation(it) } ?: false
         return false
     }
 
@@ -97,9 +97,9 @@ private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
 
     protected fun visitCall(expression: IrCall, withoutBodyCheck: Boolean = true): Boolean {
         val property = (expression.symbol.owner as? IrFunctionImpl)?.correspondingPropertySymbol?.owner
-        if (hasCompileCompileTimeAnnotation(expression.symbol.owner.annotations) ||
+        if (hasCompileCompileTimeAnnotation(expression.symbol.owner) ||
             //TODO set CompileTimeCalculation annotation in generated getter
-            property?.isConst == true || property?.annotations?.let { hasCompileCompileTimeAnnotation(it) } == true
+            property?.isConst == true || property?.let { hasCompileCompileTimeAnnotation(it) } == true
         ) {
             val dispatchReceiverComputable = expression.dispatchReceiver?.accept(this, null) ?: true
             val extensionReceiverComputable = expression.extensionReceiver?.accept(this, null) ?: true
@@ -118,7 +118,7 @@ private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
     }
 
     protected fun visitConstructor(expression: IrFunctionAccessExpression, withoutBodyCheck: Boolean = true): Boolean {
-        if (hasCompileCompileTimeAnnotation(expression.symbol.owner.annotations)) {
+        if (hasCompileCompileTimeAnnotation(expression.symbol.owner)) {
             if (!visitValueParameters(expression, null)) return false
             return when {
                 withoutBodyCheck -> true
@@ -136,6 +136,10 @@ private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
 
     override fun visitBranch(branch: IrBranch, data: Nothing?): Boolean {
         return branch.condition.accept(this, data) && branch.result.accept(this, data)
+    }
+
+    override fun visitGetObjectValue(expression: IrGetObjectValue, data: Nothing?): Boolean {
+        return hasCompileCompileTimeAnnotation(expression.symbol.owner) || expression.symbol.owner.isCompanion
     }
 }
 
@@ -158,6 +162,10 @@ private class SignatureVisitor : BasicVisitor() {
 private class BodyVisitor : BasicVisitor() {
     override fun visitCall(expression: IrCall, data: Nothing?): Boolean {
         return visitCall(expression, withoutBodyCheck = false)
+    }
+
+    override fun visitValueParameter(declaration: IrValueParameter, data: Nothing?): Boolean {
+        return true
     }
 
     override fun visitConstructorCall(expression: IrConstructorCall, data: Nothing?): Boolean {
@@ -202,5 +210,16 @@ private class BodyVisitor : BasicVisitor() {
 
     override fun visitSetVariable(expression: IrSetVariable, data: Nothing?): Boolean {
         return expression.value.accept(this, data)
+    }
+
+    override fun visitTypeOperator(expression: IrTypeOperatorCall, data: Nothing?): Boolean {
+        return when (expression.operator) {
+            IrTypeOperator.IMPLICIT_COERCION_TO_UNIT -> true
+            else -> false
+        }
+    }
+
+    override fun visitWhileLoop(loop: IrWhileLoop, data: Nothing?): Boolean {
+        return loop.condition.accept(this, data) && (loop.body?.accept(this, data) ?: true)
     }
 }
