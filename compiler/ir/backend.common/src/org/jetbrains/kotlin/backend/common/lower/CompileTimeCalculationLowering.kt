@@ -7,12 +7,11 @@ package org.jetbrains.kotlin.backend.common.lower
 
 import org.jetbrains.kotlin.backend.common.CommonBackendContext
 import org.jetbrains.kotlin.backend.common.FileLoweringPass
-import org.jetbrains.kotlin.backend.common.interpreter.IrInterpreter
+import org.jetbrains.kotlin.backend.common.interpreter.*
 import org.jetbrains.kotlin.backend.common.interpreter.builtins.compileTimeAnnotation
-import org.jetbrains.kotlin.backend.common.interpreter.getBody
-import org.jetbrains.kotlin.backend.common.interpreter.isAbstract
-import org.jetbrains.kotlin.backend.common.interpreter.isFakeOverridden
 import org.jetbrains.kotlin.builtins.DefaultBuiltIns
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.declarations.*
@@ -63,6 +62,10 @@ private class Transformer : IrElementTransformerVoid() {
 }
 
 private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
+    // used to understand if IrGetValue is valid or not
+    // todo figure something better or just remove it
+    protected val parameters = mutableListOf<DeclarationDescriptor>()
+
     protected fun hasCompileCompileTimeAnnotation(container: IrAnnotationContainer): Boolean {
         if (container.annotations.isNotEmpty()) {
             return container.annotations.any { it.symbol.descriptor.containingDeclaration.fqNameSafe == compileTimeAnnotation }
@@ -77,6 +80,7 @@ private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
 
     protected fun visitValueParameters(expression: IrFunctionAccessExpression, data: Nothing?): Boolean {
         for (i in 0 until expression.valueArgumentsCount) {
+            parameters += expression.symbol.descriptor.valueParameters[i]
             if (expression.getValueArgument(i)?.accept(this, data) == false) {
                 return false
             }
@@ -119,6 +123,7 @@ private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
 
     protected fun visitConstructor(expression: IrFunctionAccessExpression, withoutBodyCheck: Boolean = true): Boolean {
         if (hasCompileCompileTimeAnnotation(expression.symbol.owner)) {
+            parameters += expression.getThisAsReceiver()
             if (!visitValueParameters(expression, null)) return false
             return when {
                 withoutBodyCheck -> true
@@ -195,7 +200,11 @@ private class BodyVisitor : BasicVisitor() {
         return expression.value.accept(this, data)
     }
 
-    override fun visitGetValue(expression: IrGetValue, data: Nothing?): Boolean = true
+    override fun visitGetValue(expression: IrGetValue, data: Nothing?): Boolean {
+        // receiver always present
+        if (expression.symbol.descriptor is ReceiverParameterDescriptor) return true
+        return parameters.any { it.equalTo(expression.symbol.descriptor) }
+    }
 
     override fun visitGetField(expression: IrGetField, data: Nothing?): Boolean = true
 
@@ -205,6 +214,7 @@ private class BodyVisitor : BasicVisitor() {
     }
 
     override fun visitVariable(declaration: IrVariable, data: Nothing?): Boolean {
+        parameters += declaration.descriptor
         return declaration.initializer?.accept(this, data) ?: true
     }
 
