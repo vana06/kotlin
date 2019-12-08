@@ -9,8 +9,6 @@ import org.jetbrains.kotlin.backend.common.CommonBackendContext
 import org.jetbrains.kotlin.backend.common.FileLoweringPass
 import org.jetbrains.kotlin.backend.common.interpreter.*
 import org.jetbrains.kotlin.backend.common.interpreter.builtins.compileTimeAnnotation
-import org.jetbrains.kotlin.backend.common.interpreter.builtins.evaluateIntrinsicAnnotation
-import org.jetbrains.kotlin.backend.common.interpreter.interpret
 import org.jetbrains.kotlin.builtins.DefaultBuiltIns
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrStatement
@@ -28,36 +26,37 @@ class CompileTimeCalculationLowering(val context: CommonBackendContext) : FileLo
     override fun lower(irFile: IrFile) {
         irFile.transformChildren(Transformer(), null)
     }
-}
 
-private class Transformer : IrElementTransformerVoid() {
-    override fun visitCall(expression: IrCall): IrExpression {
-        if (expression.accept(SignatureVisitor(), null)) {
-            return when {
-                expression.accept(BodyVisitor(), null) -> interpret(expression)
-                else -> throw AssertionError("Ir call is marked as @CompileTimeCalculation but body contains not const expressions or statements")
+    private inner class Transformer : IrElementTransformerVoid() {
+        override fun visitCall(expression: IrCall): IrExpression {
+            if (expression.accept(SignatureVisitor(), null)) {
+                return when {
+                    expression.accept(BodyVisitor(), null) -> IrInterpreter(context.ir.symbols).interpret(expression)
+                    else -> throw AssertionError("Ir call is marked as @CompileTimeCalculation but body contains not const expressions or statements")
+                }
             }
+            return expression
         }
-        return expression
+
+        override fun visitField(declaration: IrField): IrStatement {
+            val initializer = declaration.initializer
+            val expression = initializer?.expression ?: return declaration
+            val hasRightSignature = expression.accept(SignatureVisitor(), null)
+            val isCompileTimeComputable = expression.accept(BodyVisitor(), null)
+            if (declaration.descriptor.isConst && (!hasRightSignature || !isCompileTimeComputable)) {
+                initializer.expression = IrErrorExpressionImpl(
+                    declaration.startOffset, declaration.endOffset, declaration.type,
+                    "Const property is used only with functions annotated as CompileTimeCalculation"
+                )
+            } else if (hasRightSignature && isCompileTimeComputable) {
+                initializer.expression = IrInterpreter(context.ir.symbols).interpret(expression)
+            }
+            return declaration
+        }
+
+        //todo annotation call
     }
 
-    override fun visitField(declaration: IrField): IrStatement {
-        val initializer = declaration.initializer
-        val expression = initializer?.expression ?: return declaration
-        val hasRightSignature = expression.accept(SignatureVisitor(), null)
-        val isCompileTimeComputable = expression.accept(BodyVisitor(), null)
-        if (declaration.descriptor.isConst && (!hasRightSignature || !isCompileTimeComputable)) {
-            initializer.expression = IrErrorExpressionImpl(
-                declaration.startOffset, declaration.endOffset, declaration.type,
-                "Const property is used only with functions annotated as CompileTimeCalculation"
-            )
-        } else if (hasRightSignature && isCompileTimeComputable) {
-            initializer.expression = IrInterpreter().interpret(expression)
-        }
-        return declaration
-    }
-
-    //todo annotation call
 }
 
 private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
