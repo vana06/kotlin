@@ -9,9 +9,9 @@ import org.jetbrains.kotlin.backend.common.CommonBackendContext
 import org.jetbrains.kotlin.backend.common.FileLoweringPass
 import org.jetbrains.kotlin.backend.common.interpreter.*
 import org.jetbrains.kotlin.backend.common.interpreter.builtins.compileTimeAnnotation
+import org.jetbrains.kotlin.backend.common.interpreter.builtins.evaluateIntrinsicAnnotation
+import org.jetbrains.kotlin.backend.common.interpreter.interpret
 import org.jetbrains.kotlin.builtins.DefaultBuiltIns
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.declarations.*
@@ -19,7 +19,6 @@ import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.ir.expressions.impl.IrErrorExpressionImpl
 import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
-import org.jetbrains.kotlin.ir.util.parentAsClass
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.IrElementVisitor
@@ -35,7 +34,7 @@ private class Transformer : IrElementTransformerVoid() {
     override fun visitCall(expression: IrCall): IrExpression {
         if (expression.accept(SignatureVisitor(), null)) {
             return when {
-                expression.accept(BodyVisitor(), null) -> IrInterpreter().interpret(expression)
+                expression.accept(BodyVisitor(), null) -> interpret(expression)
                 else -> throw AssertionError("Ir call is marked as @CompileTimeCalculation but body contains not const expressions or statements")
             }
         }
@@ -62,10 +61,6 @@ private class Transformer : IrElementTransformerVoid() {
 }
 
 private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
-    // used to understand if IrGetValue is valid or not
-    // todo figure something better or just remove it
-    protected val parameters = mutableListOf<DeclarationDescriptor>()
-
     protected fun hasCompileCompileTimeAnnotation(container: IrAnnotationContainer): Boolean {
         if (container.annotations.isNotEmpty()) {
             return container.annotations.any { it.symbol.descriptor.containingDeclaration.fqNameSafe == compileTimeAnnotation }
@@ -80,7 +75,6 @@ private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
 
     protected fun visitValueParameters(expression: IrFunctionAccessExpression, data: Nothing?): Boolean {
         for (i in 0 until expression.valueArgumentsCount) {
-            parameters += expression.symbol.descriptor.valueParameters[i]
             if (expression.getValueArgument(i)?.accept(this, data) == false) {
                 return false
             }
@@ -92,10 +86,19 @@ private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
         val owner = symbol.owner as IrFunctionImpl
         val overridden = owner.overriddenSymbols.first()
 
-        return if (overridden.owner.body != null) {
-            overridden.owner.body!!.accept(this, null)
-        } else {
-            visitOverridden(overridden.owner.symbol)
+        val property = (overridden.owner as? IrFunctionImpl)?.correspondingPropertySymbol?.owner
+        if (!(hasCompileCompileTimeAnnotation(overridden.owner) ||
+            //TODO set CompileTimeCalculation annotation in generated getter
+            property?.isConst == true || property?.let { hasCompileCompileTimeAnnotation(it) } == true) &&
+            overridden.owner.body != null
+        ) {
+            return false
+        }
+        return when {
+            //!hasCompileCompileTimeAnnotation((overridden as IrFunctionSymbol).owner) && overridden.owner.body != null -> return false
+            overridden.owner.body != null -> overridden.owner.body!!.accept(this, null)
+            overridden.owner.symbol.owner.overriddenSymbols.isNotEmpty() -> visitOverridden(overridden.owner.symbol)
+            else -> true // todo find method in builtins or it is abstract
         }
     }
 
@@ -110,10 +113,10 @@ private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
             if (!visitValueParameters(expression, null)) return false
             val bodyComputable = when {
                 withoutBodyCheck -> true
-                expression.getBody() != null -> expression.getBody()!!.accept(this, null)
                 expression.isAbstract() -> true // todo make full check
                 expression.isFakeOverridden() -> visitOverridden(expression.symbol)
-                else -> true // todo find method in builtins
+                expression.getBody() == null -> true // todo find method in builtins
+                else -> (expression.symbol.owner.body ?: expression.getBody())!!.accept(this, null)
             }
             return dispatchReceiverComputable && extensionReceiverComputable && bodyComputable
         }
@@ -123,7 +126,6 @@ private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
 
     protected fun visitConstructor(expression: IrFunctionAccessExpression, withoutBodyCheck: Boolean = true): Boolean {
         if (hasCompileCompileTimeAnnotation(expression.symbol.owner)) {
-            parameters += expression.getThisAsReceiver()
             if (!visitValueParameters(expression, null)) return false
             return when {
                 withoutBodyCheck -> true
@@ -158,6 +160,10 @@ private class SignatureVisitor : BasicVisitor() {
 
     override fun visitConstructorCall(expression: IrConstructorCall, data: Nothing?): Boolean {
         return visitConstructor(expression, withoutBodyCheck = true)
+    }
+
+    override fun visitBlock(expression: IrBlock, data: Nothing?): Boolean {
+        return expression is IrReturnableBlock && expression.inlineFunctionSymbol?.owner?.let { hasCompileCompileTimeAnnotation(it) } == true
     }
 }
 
@@ -200,11 +206,7 @@ private class BodyVisitor : BasicVisitor() {
         return expression.value.accept(this, data)
     }
 
-    override fun visitGetValue(expression: IrGetValue, data: Nothing?): Boolean {
-        // receiver always present
-        if (expression.symbol.descriptor is ReceiverParameterDescriptor) return true
-        return parameters.any { it.equalTo(expression.symbol.descriptor) }
-    }
+    override fun visitGetValue(expression: IrGetValue, data: Nothing?): Boolean = true
 
     override fun visitGetField(expression: IrGetField, data: Nothing?): Boolean = true
 
@@ -214,7 +216,6 @@ private class BodyVisitor : BasicVisitor() {
     }
 
     override fun visitVariable(declaration: IrVariable, data: Nothing?): Boolean {
-        parameters += declaration.descriptor
         return declaration.initializer?.accept(this, data) ?: true
     }
 
@@ -223,8 +224,10 @@ private class BodyVisitor : BasicVisitor() {
     }
 
     override fun visitTypeOperator(expression: IrTypeOperatorCall, data: Nothing?): Boolean {
+        // todo check argument
         return when (expression.operator) {
             IrTypeOperator.IMPLICIT_COERCION_TO_UNIT -> true
+            IrTypeOperator.CAST -> true
             else -> false
         }
     }
@@ -232,4 +235,6 @@ private class BodyVisitor : BasicVisitor() {
     override fun visitWhileLoop(loop: IrWhileLoop, data: Nothing?): Boolean {
         return loop.condition.accept(this, data) && (loop.body?.accept(this, data) ?: true)
     }
+
+    override fun visitBreak(jump: IrBreak, data: Nothing?): Boolean = true
 }
