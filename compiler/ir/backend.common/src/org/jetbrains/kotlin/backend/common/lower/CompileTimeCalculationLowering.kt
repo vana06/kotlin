@@ -9,6 +9,7 @@ import org.jetbrains.kotlin.backend.common.CommonBackendContext
 import org.jetbrains.kotlin.backend.common.FileLoweringPass
 import org.jetbrains.kotlin.backend.common.interpreter.*
 import org.jetbrains.kotlin.backend.common.interpreter.builtins.compileTimeAnnotation
+import org.jetbrains.kotlin.backend.common.interpreter.builtins.evaluateIntrinsicAnnotation
 import org.jetbrains.kotlin.builtins.DefaultBuiltIns
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrStatement
@@ -31,7 +32,7 @@ class CompileTimeCalculationLowering(val context: CommonBackendContext) : FileLo
         override fun visitCall(expression: IrCall): IrExpression {
             if (expression.accept(SignatureVisitor(), null)) {
                 return when {
-                    expression.accept(BodyVisitor(), null) -> IrInterpreter(context.ir.symbols).interpret(expression)
+                    expression.accept(BodyVisitor(), null) -> IrInterpreter(context.irBuiltIns).interpret(expression)
                     else -> throw AssertionError("Ir call is marked as @CompileTimeCalculation but body contains not const expressions or statements")
                 }
             }
@@ -49,7 +50,7 @@ class CompileTimeCalculationLowering(val context: CommonBackendContext) : FileLo
                     "Const property is used only with functions annotated as CompileTimeCalculation"
                 )
             } else if (hasRightSignature && isCompileTimeComputable) {
-                initializer.expression = IrInterpreter(context.ir.symbols).interpret(expression)
+                initializer.expression = IrInterpreter(context.irBuiltIns).interpret(expression)
             }
             return declaration
         }
@@ -61,11 +62,13 @@ class CompileTimeCalculationLowering(val context: CommonBackendContext) : FileLo
 
 private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
     protected fun hasCompileCompileTimeAnnotation(container: IrAnnotationContainer): Boolean {
-        if (container.annotations.isNotEmpty()) {
-            return container.annotations.any { it.symbol.descriptor.containingDeclaration.fqNameSafe == compileTimeAnnotation }
-        }
+        if (container.hasAnnotation(compileTimeAnnotation)) return true
         if (container is IrDeclaration) return (container.parent as? IrClass)?.let { hasCompileCompileTimeAnnotation(it) } ?: false
         return false
+    }
+
+    protected fun hasEvaluateIntrinsicAnnotation(container: IrAnnotationContainer): Boolean {
+        return container.annotations.any { it.symbol.descriptor.containingDeclaration.fqNameSafe == evaluateIntrinsicAnnotation }
     }
 
     override fun visitElement(element: IrElement, data: Nothing?): Boolean {
@@ -111,6 +114,7 @@ private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
             val extensionReceiverComputable = expression.extensionReceiver?.accept(this, null) ?: true
             if (!visitValueParameters(expression, null)) return false
             val bodyComputable = when {
+                hasEvaluateIntrinsicAnnotation(expression.symbol.owner) -> true
                 withoutBodyCheck -> true
                 expression.isAbstract() -> true // todo make full check
                 expression.isFakeOverridden() -> visitOverridden(expression.symbol)

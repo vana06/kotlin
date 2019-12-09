@@ -5,6 +5,7 @@
 
 @file:kotlin.jvm.JvmMultifileClass
 @file:kotlin.jvm.JvmName("StringsKt")
+@file:Suppress("UNRESOLVED_REFERENCE")  // used here because CompileTimeCalculation annotation is unresolved
 
 package kotlin.text
 
@@ -13,6 +14,7 @@ import kotlin.contracts.contract
 /**
  * Returns a sub sequence of this char sequence having leading and trailing characters matching the [predicate] removed.
  */
+@CompileTimeCalculation
 public inline fun CharSequence.trim(predicate: (Char) -> Boolean): CharSequence {
     var startIndex = 0
     var endIndex = length - 1
@@ -111,11 +113,13 @@ public fun String.trimEnd(vararg chars: Char): String = trimEnd { it in chars }
 /**
  * Returns a sub sequence of this char sequence having leading and trailing whitespace removed.
  */
+@CompileTimeCalculation
 public fun CharSequence.trim(): CharSequence = trim(Char::isWhitespace)
 
 /**
  * Returns a string having leading and trailing whitespace removed.
  */
+@CompileTimeCalculation
 @kotlin.internal.InlineOnly
 public inline fun String.trim(): String = (this as CharSequence).trim().toString()
 
