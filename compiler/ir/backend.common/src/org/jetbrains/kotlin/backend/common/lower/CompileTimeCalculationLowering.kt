@@ -240,4 +240,6 @@ private class BodyVisitor : BasicVisitor() {
     }
 
     override fun visitBreak(jump: IrBreak, data: Nothing?): Boolean = true
+
+    override fun visitContinue(jump: IrContinue, data: Nothing?): Boolean = true
 }
