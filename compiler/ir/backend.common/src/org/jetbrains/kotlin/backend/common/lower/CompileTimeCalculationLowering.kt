@@ -21,7 +21,6 @@ import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.IrElementVisitor
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class CompileTimeCalculationLowering(val context: CommonBackendContext) : FileLoweringPass {
     override fun lower(irFile: IrFile) {
@@ -32,7 +31,7 @@ class CompileTimeCalculationLowering(val context: CommonBackendContext) : FileLo
         override fun visitCall(expression: IrCall): IrExpression {
             if (expression.accept(SignatureVisitor(), null)) {
                 return when {
-                    expression.accept(BodyVisitor(), null) -> IrInterpreter(context.irBuiltIns).interpret(expression)
+                    expression.accept(BodyVisitor(), null) -> IrInterpreter(context.ir.irModule).interpret(expression)
                     else -> throw AssertionError("Ir call is marked as @CompileTimeCalculation but body contains not const expressions or statements")
                 }
             }
@@ -50,7 +49,7 @@ class CompileTimeCalculationLowering(val context: CommonBackendContext) : FileLo
                     "Const property is used only with functions annotated as CompileTimeCalculation"
                 )
             } else if (hasRightSignature && isCompileTimeComputable) {
-                initializer.expression = IrInterpreter(context.irBuiltIns).interpret(expression)
+                initializer.expression = IrInterpreter(context.ir.irModule).interpret(expression)
             }
             return declaration
         }
@@ -61,14 +60,10 @@ class CompileTimeCalculationLowering(val context: CommonBackendContext) : FileLo
 }
 
 private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
-    protected fun hasCompileCompileTimeAnnotation(container: IrAnnotationContainer): Boolean {
+    protected fun isMarkedAsCompileTime(container: IrAnnotationContainer): Boolean {
         if (container.hasAnnotation(compileTimeAnnotation)) return true
-        if (container is IrDeclaration) return (container.parent as? IrClass)?.let { hasCompileCompileTimeAnnotation(it) } ?: false
+        if (container is IrDeclaration) return (container.parent as? IrClass)?.let { isMarkedAsCompileTime(it) } ?: false
         return false
-    }
-
-    protected fun hasEvaluateIntrinsicAnnotation(container: IrAnnotationContainer): Boolean {
-        return container.annotations.any { it.symbol.descriptor.containingDeclaration.fqNameSafe == evaluateIntrinsicAnnotation }
     }
 
     override fun visitElement(element: IrElement, data: Nothing?): Boolean {
@@ -89,9 +84,9 @@ private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
         val overridden = owner.overriddenSymbols.first()
 
         val property = (overridden.owner as? IrFunctionImpl)?.correspondingPropertySymbol?.owner
-        if (!(hasCompileCompileTimeAnnotation(overridden.owner) ||
+        if (!(isMarkedAsCompileTime(overridden.owner) ||
             //TODO set CompileTimeCalculation annotation in generated getter
-            property?.isConst == true || property?.let { hasCompileCompileTimeAnnotation(it) } == true) &&
+            property?.isConst == true || property?.let { isMarkedAsCompileTime(it) } == true) &&
             overridden.owner.body != null
         ) {
             return false
@@ -106,20 +101,20 @@ private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
 
     protected fun visitCall(expression: IrCall, withoutBodyCheck: Boolean = true): Boolean {
         val property = (expression.symbol.owner as? IrFunctionImpl)?.correspondingPropertySymbol?.owner
-        if (hasCompileCompileTimeAnnotation(expression.symbol.owner) ||
+        if (isMarkedAsCompileTime(expression.symbol.owner) ||
             //TODO set CompileTimeCalculation annotation in generated getter
-            property?.isConst == true || property?.let { hasCompileCompileTimeAnnotation(it) } == true
+            property?.isConst == true || property?.let { isMarkedAsCompileTime(it) } == true
         ) {
             val dispatchReceiverComputable = expression.dispatchReceiver?.accept(this, null) ?: true
             val extensionReceiverComputable = expression.extensionReceiver?.accept(this, null) ?: true
             if (!visitValueParameters(expression, null)) return false
             val bodyComputable = when {
-                hasEvaluateIntrinsicAnnotation(expression.symbol.owner) -> true
                 withoutBodyCheck -> true
+                expression.symbol.owner.hasAnnotation(evaluateIntrinsicAnnotation) -> true
                 expression.isAbstract() -> true // todo make full check
                 expression.isFakeOverridden() -> visitOverridden(expression.symbol)
                 expression.getBody() == null -> true // todo find method in builtins
-                else -> (expression.symbol.owner.body ?: expression.getBody())!!.accept(this, null)
+                else -> expression.getBody()!!.accept(this, null)
             }
             return dispatchReceiverComputable && extensionReceiverComputable && bodyComputable
         }
@@ -128,7 +123,7 @@ private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
     }
 
     protected fun visitConstructor(expression: IrFunctionAccessExpression, withoutBodyCheck: Boolean = true): Boolean {
-        if (hasCompileCompileTimeAnnotation(expression.symbol.owner)) {
+        if (isMarkedAsCompileTime(expression.symbol.owner)) {
             if (!visitValueParameters(expression, null)) return false
             return when {
                 withoutBodyCheck -> true
@@ -149,7 +144,11 @@ private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
     }
 
     override fun visitGetObjectValue(expression: IrGetObjectValue, data: Nothing?): Boolean {
-        return hasCompileCompileTimeAnnotation(expression.symbol.owner) || expression.symbol.owner.isCompanion
+        return isMarkedAsCompileTime(expression.symbol.owner) || expression.symbol.owner.isCompanion
+    }
+
+    override fun visitVararg(expression: IrVararg, data: Nothing?): Boolean {
+        return expression.elements.any { it.accept(this, data) }
     }
 }
 
@@ -166,7 +165,7 @@ private class SignatureVisitor : BasicVisitor() {
     }
 
     override fun visitBlock(expression: IrBlock, data: Nothing?): Boolean {
-        return expression is IrReturnableBlock && expression.inlineFunctionSymbol?.owner?.let { hasCompileCompileTimeAnnotation(it) } == true
+        return expression is IrReturnableBlock && expression.inlineFunctionSymbol?.owner?.let { isMarkedAsCompileTime(it) } == true
     }
 }
 
