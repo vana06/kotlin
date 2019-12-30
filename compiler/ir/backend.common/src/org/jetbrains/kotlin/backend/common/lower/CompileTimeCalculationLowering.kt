@@ -21,6 +21,7 @@ import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.IrElementVisitor
+import org.jetbrains.kotlin.name.FqName
 
 class CompileTimeCalculationLowering(val context: CommonBackendContext) : FileLoweringPass {
     override fun lower(irFile: IrFile) {
@@ -60,9 +61,12 @@ class CompileTimeCalculationLowering(val context: CommonBackendContext) : FileLo
 }
 
 private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
-    protected fun isMarkedAsCompileTime(container: IrAnnotationContainer): Boolean {
-        if (container.hasAnnotation(compileTimeAnnotation)) return true
-        if (container is IrDeclaration) return (container.parent as? IrClass)?.let { isMarkedAsCompileTime(it) } ?: false
+    protected fun isMarkedAsCompileTime(container: IrAnnotationContainer) = container.isMarkedWith(compileTimeAnnotation)
+    protected fun isMarkedAsEvaluateIntrinsic(container: IrAnnotationContainer) = container.isMarkedWith(evaluateIntrinsicAnnotation)
+
+    protected fun IrAnnotationContainer.isMarkedWith(annotation: FqName): Boolean {
+        if (this.hasAnnotation(annotation)) return true
+        if (this is IrDeclaration) return (this.parent as? IrClass)?.let { isMarkedAsCompileTime(it) } ?: false
         return false
     }
 
@@ -110,7 +114,7 @@ private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
             if (!visitValueParameters(expression, null)) return false
             val bodyComputable = when {
                 withoutBodyCheck -> true
-                expression.symbol.owner.hasAnnotation(evaluateIntrinsicAnnotation) -> true
+                isMarkedAsEvaluateIntrinsic(expression.symbol.owner) -> true
                 expression.isAbstract() -> true // todo make full check
                 expression.isFakeOverridden() -> visitOverridden(expression.symbol)
                 expression.getBody() == null -> true // todo find method in builtins
