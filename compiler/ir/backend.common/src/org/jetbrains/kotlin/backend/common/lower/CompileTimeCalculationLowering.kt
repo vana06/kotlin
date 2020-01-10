@@ -18,6 +18,7 @@ import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.ir.expressions.impl.IrErrorExpressionImpl
 import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
+import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.IrElementVisitor
@@ -66,7 +67,7 @@ private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
 
     protected fun IrAnnotationContainer.isMarkedWith(annotation: FqName): Boolean {
         if (this.hasAnnotation(annotation)) return true
-        if (this is IrDeclaration) return (this.parent as? IrClass)?.let { isMarkedAsCompileTime(it) } ?: false
+        if (this is IrDeclaration) return (this.parent as? IrClass)?.let { it.isMarkedWith(annotation) } ?: false
         return false
     }
 
@@ -127,14 +128,15 @@ private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
     }
 
     protected fun visitConstructor(expression: IrFunctionAccessExpression, withoutBodyCheck: Boolean = true): Boolean {
-        if (isMarkedAsCompileTime(expression.symbol.owner)) {
-            if (!visitValueParameters(expression, null)) return false
-            return when {
+        return when {
+            isMarkedAsEvaluateIntrinsic(expression.symbol.owner) -> true
+            isMarkedAsCompileTime(expression.symbol.owner) -> when {
+                !visitValueParameters(expression, null) -> false
                 withoutBodyCheck -> true
                 else -> expression.getBody()?.statements?.all { it.accept(this, null) } ?: false
             }
+            else -> false
         }
-        return false
     }
 
     override fun <T> visitConst(expression: IrConst<T>, data: Nothing?): Boolean = true
@@ -169,7 +171,8 @@ private class SignatureVisitor : BasicVisitor() {
     }
 
     override fun visitBlock(expression: IrBlock, data: Nothing?): Boolean {
-        return expression is IrReturnableBlock && expression.inlineFunctionSymbol?.owner?.let { isMarkedAsCompileTime(it) } == true
+        return (expression is IrReturnableBlock && expression.inlineFunctionSymbol?.owner?.let { isMarkedAsCompileTime(it) } == true) ||
+                expression.isLambdaFunction()
     }
 }
 
@@ -205,6 +208,10 @@ private class BodyVisitor : BasicVisitor() {
     }
 
     override fun visitBlock(expression: IrBlock, data: Nothing?): Boolean {
+        if (expression.isLambdaFunction()) {
+            val irLambdaReference = expression.statements.filterIsInstance<IrFunctionReference>().firstOrNull()
+            return irLambdaReference?.symbol?.owner?.body?.accept(this, data) ?: false
+        }
         return visitStatements(expression.statements, data)
     }
 
