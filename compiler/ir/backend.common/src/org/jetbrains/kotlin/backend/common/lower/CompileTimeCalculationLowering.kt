@@ -67,7 +67,7 @@ private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
 
     protected fun IrAnnotationContainer.isMarkedWith(annotation: FqName): Boolean {
         if (this.hasAnnotation(annotation)) return true
-        if (this is IrDeclaration) return (this.parent as? IrClass)?.let { it.isMarkedWith(annotation) } ?: false
+        if (this is IrDeclaration) return (this.parent as? IrClass)?.isMarkedWith(annotation) ?: false
         return false
     }
 
@@ -174,6 +174,13 @@ private class SignatureVisitor : BasicVisitor() {
         return (expression is IrReturnableBlock && expression.inlineFunctionSymbol?.owner?.let { isMarkedAsCompileTime(it) } == true) ||
                 expression.isLambdaFunction()
     }
+
+    override fun visitTry(aTry: IrTry, data: Nothing?): Boolean {
+        return aTry.catches.all {
+            val catchParameterIrClass = it.catchParameter.type.classOrNull!!.owner
+            return@all isMarkedAsCompileTime(catchParameterIrClass) || isMarkedAsEvaluateIntrinsic(catchParameterIrClass)
+        }
+    }
 }
 
 /**
@@ -253,4 +260,14 @@ private class BodyVisitor : BasicVisitor() {
     override fun visitBreak(jump: IrBreak, data: Nothing?): Boolean = true
 
     override fun visitContinue(jump: IrContinue, data: Nothing?): Boolean = true
+
+    override fun visitTry(aTry: IrTry, data: Nothing?): Boolean {
+        if (!aTry.tryResult.accept(this, data)) return false
+        if (aTry.finallyExpression != null && aTry.finallyExpression?.accept(this, data) == false) return false
+        return aTry.catches.all { it.result.accept(this, data) }
+    }
+
+    override fun visitThrow(expression: IrThrow, data: Nothing?): Boolean {
+        return expression.value.accept(this, data)
+    }
 }
