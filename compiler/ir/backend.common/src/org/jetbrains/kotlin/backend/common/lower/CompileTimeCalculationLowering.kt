@@ -246,7 +246,7 @@ private class BodyVisitor : BasicVisitor() {
     override fun visitTypeOperator(expression: IrTypeOperatorCall, data: Nothing?): Boolean {
         // todo check argument
         return when (expression.operator) {
-            IrTypeOperator.IMPLICIT_COERCION_TO_UNIT -> true
+            IrTypeOperator.IMPLICIT_COERCION_TO_UNIT -> expression.argument.accept(this, data)
             IrTypeOperator.IMPLICIT_DYNAMIC_CAST -> true
             IrTypeOperator.CAST -> true
             else -> false
