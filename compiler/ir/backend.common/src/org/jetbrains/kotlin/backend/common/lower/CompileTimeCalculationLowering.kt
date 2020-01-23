@@ -156,6 +156,10 @@ private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
     override fun visitVararg(expression: IrVararg, data: Nothing?): Boolean {
         return expression.elements.any { it.accept(this, data) }
     }
+
+    override fun visitStringConcatenation(expression: IrStringConcatenation, data: Nothing?): Boolean {
+        return expression.arguments.all { it.accept(this, data) }
+    }
 }
 
 /**
