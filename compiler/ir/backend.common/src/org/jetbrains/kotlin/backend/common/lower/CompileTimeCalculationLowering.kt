@@ -62,13 +62,14 @@ class CompileTimeCalculationLowering(val context: CommonBackendContext) : FileLo
 }
 
 private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
-    protected fun isMarkedAsCompileTime(container: IrAnnotationContainer) = container.isMarkedWith(compileTimeAnnotation)
-    protected fun isMarkedAsEvaluateIntrinsic(container: IrAnnotationContainer) = container.isMarkedWith(evaluateIntrinsicAnnotation)
+    protected fun isMarkedAsCompileTime(container: IrDeclaration) = container.isMarkedWith(compileTimeAnnotation)
+    protected fun isMarkedAsEvaluateIntrinsic(container: IrDeclaration) = container.isMarkedWith(evaluateIntrinsicAnnotation)
 
-    protected fun IrAnnotationContainer.isMarkedWith(annotation: FqName): Boolean {
-        if (this.hasAnnotation(annotation)) return true
-        if (this is IrDeclaration) return (this.parent as? IrClass)?.isMarkedWith(annotation) ?: false
-        return false
+    protected fun IrDeclaration.isMarkedWith(annotation: FqName): Boolean {
+        if (this is IrClass && this.isCompanion) return false
+        // must check descriptor annotations too because ir builtins operators don't have annotation on ir element
+        if (this.hasAnnotation(annotation) || this.descriptor.annotations.hasAnnotation(annotation)) return true
+        return (this.parent as? IrClass)?.isMarkedWith(annotation) ?: false
     }
 
     override fun visitElement(element: IrElement, data: Nothing?): Boolean {
@@ -150,7 +151,8 @@ private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
     }
 
     override fun visitGetObjectValue(expression: IrGetObjectValue, data: Nothing?): Boolean {
-        return isMarkedAsCompileTime(expression.symbol.owner) || expression.symbol.owner.isCompanion
+        // to get object value we need nothing but it will contain only fields with compile time annotation
+        return true
     }
 
     override fun visitVararg(expression: IrVararg, data: Nothing?): Boolean {
