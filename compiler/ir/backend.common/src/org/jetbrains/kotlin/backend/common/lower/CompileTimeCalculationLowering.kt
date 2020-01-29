@@ -225,6 +225,9 @@ private class BodyVisitor : BasicVisitor() {
             val irLambdaReference = expression.statements.filterIsInstance<IrFunctionReference>().firstOrNull()
             return irLambdaReference?.symbol?.owner?.body?.accept(this, data) ?: false
         }
+        if (expression is IrReturnableBlock) {
+            expression.inlineFunctionSymbol?.owner?.let { return isMarkedAsCompileTime(it) }
+        }
         return visitStatements(expression.statements, data)
     }
 
@@ -251,8 +254,9 @@ private class BodyVisitor : BasicVisitor() {
 
     override fun visitTypeOperator(expression: IrTypeOperatorCall, data: Nothing?): Boolean {
         return when (expression.operator) {
-            IrTypeOperator.IMPLICIT_COERCION_TO_UNIT, IrTypeOperator.IMPLICIT_DYNAMIC_CAST,
+            IrTypeOperator.IMPLICIT_COERCION_TO_UNIT,
             IrTypeOperator.CAST, IrTypeOperator.IMPLICIT_CAST, IrTypeOperator.SAFE_CAST -> expression.argument.accept(this, data)
+            IrTypeOperator.IMPLICIT_DYNAMIC_CAST -> false
             else -> false
         }
     }
