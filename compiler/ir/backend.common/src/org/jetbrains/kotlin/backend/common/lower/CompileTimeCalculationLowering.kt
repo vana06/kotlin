@@ -62,6 +62,8 @@ class CompileTimeCalculationLowering(val context: CommonBackendContext) : FileLo
 }
 
 private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
+    private val callStack = mutableListOf<String>()
+
     protected fun isMarkedAsCompileTime(container: IrDeclaration) = container.isMarkedWith(compileTimeAnnotation)
     protected fun isMarkedAsEvaluateIntrinsic(container: IrDeclaration) = container.isMarkedWith(evaluateIntrinsicAnnotation)
 
@@ -106,26 +108,33 @@ private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
     }
 
     protected fun visitCall(expression: IrCall, withoutBodyCheck: Boolean = true): Boolean {
-        val property = (expression.symbol.owner as? IrFunctionImpl)?.correspondingPropertySymbol?.owner
-        if (isMarkedAsCompileTime(expression.symbol.owner) ||
-            //TODO set CompileTimeCalculation annotation in generated getter
-            property?.isConst == true || property?.let { isMarkedAsCompileTime(it) } == true
-        ) {
-            val dispatchReceiverComputable = expression.dispatchReceiver?.accept(this, null) ?: true
-            val extensionReceiverComputable = expression.extensionReceiver?.accept(this, null) ?: true
-            if (!visitValueParameters(expression, null)) return false
-            val bodyComputable = when {
-                withoutBodyCheck -> true
-                isMarkedAsEvaluateIntrinsic(expression.symbol.owner) -> true
-                expression.isAbstract() -> true // todo make full check
-                expression.isFakeOverridden() -> visitOverridden(expression.symbol)
-                expression.getBody() == null -> true // todo find method in builtins
-                else -> expression.getBody()!!.accept(this, null)
-            }
-            return dispatchReceiverComputable && extensionReceiverComputable && bodyComputable
-        }
+        try {
+            callStack += expression.symbol.owner.name.asString()
 
-        return false
+            val property = (expression.symbol.owner as? IrFunctionImpl)?.correspondingPropertySymbol?.owner
+            if (isMarkedAsCompileTime(expression.symbol.owner) ||
+                //TODO set CompileTimeCalculation annotation in generated getter
+                property?.isConst == true || property?.let { isMarkedAsCompileTime(it) } == true
+            ) {
+                val dispatchReceiverComputable = expression.dispatchReceiver?.accept(this, null) ?: true
+                val extensionReceiverComputable = expression.extensionReceiver?.accept(this, null) ?: true
+                if (!visitValueParameters(expression, null)) return false
+                val bodyComputable = when {
+                    withoutBodyCheck -> true
+                    callStack.subList(0, callStack.lastIndex).contains(expression.symbol.owner.name.asString()) -> true
+                    isMarkedAsEvaluateIntrinsic(expression.symbol.owner) -> true
+                    expression.isAbstract() -> true // todo make full check
+                    expression.isFakeOverridden() -> visitOverridden(expression.symbol)
+                    expression.getBody() == null -> true // todo find method in builtins
+                    else -> expression.getBody()!!.accept(this, null)
+                }
+                return dispatchReceiverComputable && extensionReceiverComputable && bodyComputable
+            }
+
+            return false
+        } finally {
+            callStack.removeAt(callStack.lastIndex)
+        }
     }
 
     protected fun visitConstructor(expression: IrFunctionAccessExpression, withoutBodyCheck: Boolean = true): Boolean {
