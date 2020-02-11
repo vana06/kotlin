@@ -177,6 +177,13 @@ private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
     override fun visitStringConcatenation(expression: IrStringConcatenation, data: Nothing?): Boolean {
         return expression.arguments.all { it.accept(this, data) }
     }
+
+    override fun visitTypeOperator(expression: IrTypeOperatorCall, data: Nothing?): Boolean {
+        return when (expression.operator) {
+            IrTypeOperator.INSTANCEOF, IrTypeOperator.NOT_INSTANCEOF -> expression.argument.accept(this, data)
+            else -> false
+        }
+    }
 }
 
 /**
@@ -270,6 +277,7 @@ private class BodyVisitor : BasicVisitor() {
 
     override fun visitTypeOperator(expression: IrTypeOperatorCall, data: Nothing?): Boolean {
         return when (expression.operator) {
+            IrTypeOperator.INSTANCEOF, IrTypeOperator.NOT_INSTANCEOF,
             IrTypeOperator.IMPLICIT_COERCION_TO_UNIT,
             IrTypeOperator.CAST, IrTypeOperator.IMPLICIT_CAST, IrTypeOperator.SAFE_CAST -> expression.argument.accept(this, data)
             IrTypeOperator.IMPLICIT_DYNAMIC_CAST -> false
