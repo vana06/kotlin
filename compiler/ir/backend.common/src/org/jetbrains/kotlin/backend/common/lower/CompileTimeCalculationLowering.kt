@@ -20,6 +20,7 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrErrorExpressionImpl
 import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.isArray
+import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.isPrimitiveArray
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
@@ -103,6 +104,7 @@ private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
         }
         return when {
             //!hasCompileCompileTimeAnnotation((overridden as IrFunctionSymbol).owner) && overridden.owner.body != null -> return false
+            overridden.owner.parent.fqNameForIrSerialization.asString() == "kotlin.Enum" -> true
             overridden.owner.body != null -> overridden.owner.body!!.accept(this, null)
             overridden.owner.symbol.owner.overriddenSymbols.isNotEmpty() -> visitOverridden(overridden.owner.symbol)
             else -> true // todo find method in builtins or it is abstract
@@ -168,6 +170,10 @@ private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
     override fun visitGetObjectValue(expression: IrGetObjectValue, data: Nothing?): Boolean {
         // to get object value we need nothing but it will contain only fields with compile time annotation
         return true
+    }
+
+    override fun visitGetEnumValue(expression: IrGetEnumValue, data: Nothing?): Boolean {
+        return expression.symbol.owner.initializerExpression?.accept(this, data) == true
     }
 
     override fun visitVararg(expression: IrVararg, data: Nothing?): Boolean {
@@ -237,6 +243,10 @@ private class BodyVisitor : BasicVisitor() {
 
     private fun visitStatements(statements: List<IrStatement>, data: Nothing?): Boolean {
         return statements.all { it.accept(this, data) }
+    }
+
+    override fun visitSyntheticBody(body: IrSyntheticBody, data: Nothing?): Boolean {
+        return body.kind == IrSyntheticBodyKind.ENUM_VALUES || body.kind == IrSyntheticBodyKind.ENUM_VALUEOF
     }
 
     override fun visitBody(body: IrBody, data: Nothing?): Boolean {
