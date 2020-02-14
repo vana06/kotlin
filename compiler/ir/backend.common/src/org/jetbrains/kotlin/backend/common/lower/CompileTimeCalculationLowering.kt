@@ -9,6 +9,7 @@ import org.jetbrains.kotlin.backend.common.CommonBackendContext
 import org.jetbrains.kotlin.backend.common.FileLoweringPass
 import org.jetbrains.kotlin.backend.common.interpreter.*
 import org.jetbrains.kotlin.backend.common.interpreter.builtins.compileTimeAnnotation
+import org.jetbrains.kotlin.backend.common.interpreter.builtins.contractsDslAnnotation
 import org.jetbrains.kotlin.backend.common.interpreter.builtins.evaluateIntrinsicAnnotation
 import org.jetbrains.kotlin.builtins.DefaultBuiltIns
 import org.jetbrains.kotlin.ir.IrElement
@@ -69,6 +70,7 @@ private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
 
     protected fun isMarkedAsCompileTime(container: IrDeclaration) = container.isMarkedWith(compileTimeAnnotation)
     protected fun isMarkedAsEvaluateIntrinsic(container: IrDeclaration) = container.isMarkedWith(evaluateIntrinsicAnnotation)
+    protected fun isContract(container: IrDeclaration) = container.isMarkedWith(contractsDslAnnotation)
 
     protected fun IrDeclaration.isMarkedWith(annotation: FqName): Boolean {
         if (this is IrClass && this.isCompanion) return false
@@ -113,7 +115,7 @@ private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
 
     protected fun visitCall(expression: IrCall, withoutBodyCheck: Boolean = true): Boolean {
         try {
-            callStack += expression.symbol.owner.name.asString()
+            callStack += expression.symbol.descriptor.toString()
 
             val property = (expression.symbol.owner as? IrFunctionImpl)?.correspondingPropertySymbol?.owner
             if (isMarkedAsCompileTime(expression.symbol.owner) ||
@@ -125,7 +127,7 @@ private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
                 if (!visitValueParameters(expression, null)) return false
                 val bodyComputable = when {
                     withoutBodyCheck -> true
-                    callStack.subList(0, callStack.lastIndex).contains(expression.symbol.owner.name.asString()) -> true
+                    callStack.subList(0, callStack.lastIndex).contains(expression.symbol.descriptor.toString()) -> true
                     isMarkedAsEvaluateIntrinsic(expression.symbol.owner) -> true
                     expression.isAbstract() -> true // todo make full check
                     expression.isFakeOverridden() -> visitOverridden(expression.symbol)
@@ -154,7 +156,7 @@ private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
     }
 
     override fun visitInstanceInitializerCall(expression: IrInstanceInitializerCall, data: Nothing?): Boolean {
-        return isMarkedAsCompileTime(expression.classSymbol.owner)
+        return true
     }
 
     override fun <T> visitConst(expression: IrConst<T>, data: Nothing?): Boolean = true
@@ -190,6 +192,15 @@ private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
             else -> false
         }
     }
+
+    override fun visitFunctionExpression(expression: IrFunctionExpression, data: Nothing?): Boolean {
+        return expression.origin == IrStatementOrigin.LAMBDA || expression.origin == IrStatementOrigin.ANONYMOUS_FUNCTION ||
+                isMarkedAsCompileTime(expression.function)
+    }
+
+    override fun visitFunctionReference(expression: IrFunctionReference, data: Nothing?): Boolean {
+        return isMarkedAsCompileTime(expression.symbol.owner)
+    }
 }
 
 /**
@@ -197,6 +208,7 @@ private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
  */
 private class SignatureVisitor : BasicVisitor() {
     override fun visitCall(expression: IrCall, data: Nothing?): Boolean {
+        if (isContract(expression.symbol.owner)) return false
         return visitCall(expression, withoutBodyCheck = true)
     }
 
@@ -204,10 +216,8 @@ private class SignatureVisitor : BasicVisitor() {
         return visitConstructor(expression, withoutBodyCheck = true)
     }
 
-    override fun visitBlock(expression: IrBlock, data: Nothing?): Boolean {
-        return (expression is IrReturnableBlock && expression.inlineFunctionSymbol?.owner?.let { isMarkedAsCompileTime(it) } == true) ||
-                expression.isLambdaFunction() ||
-                (expression !is IrReturnableBlock && (expression.type.isPrimitiveArray() || expression.type.isArray()))
+    override fun visitEnumConstructorCall(expression: IrEnumConstructorCall, data: Nothing?): Boolean {
+        return visitConstructor(expression, withoutBodyCheck = true)
     }
 
     override fun visitTry(aTry: IrTry, data: Nothing?): Boolean {
@@ -223,6 +233,7 @@ private class SignatureVisitor : BasicVisitor() {
  */
 private class BodyVisitor : BasicVisitor() {
     override fun visitCall(expression: IrCall, data: Nothing?): Boolean {
+        if (isContract(expression.symbol.owner)) return true
         return visitCall(expression, withoutBodyCheck = false)
     }
 
@@ -231,6 +242,10 @@ private class BodyVisitor : BasicVisitor() {
     }
 
     override fun visitConstructorCall(expression: IrConstructorCall, data: Nothing?): Boolean {
+        return visitConstructor(expression, withoutBodyCheck = false)
+    }
+
+    override fun visitEnumConstructorCall(expression: IrEnumConstructorCall, data: Nothing?): Boolean {
         return visitConstructor(expression, withoutBodyCheck = false)
     }
 
@@ -253,14 +268,12 @@ private class BodyVisitor : BasicVisitor() {
         return visitStatements(body.statements, data)
     }
 
+    override fun visitFunctionExpression(expression: IrFunctionExpression, data: Nothing?): Boolean {
+        if (!super.visitFunctionExpression(expression, data)) return false
+        return expression.function.body?.accept(this, data) ?: true
+    }
+
     override fun visitBlock(expression: IrBlock, data: Nothing?): Boolean {
-        if (expression.isLambdaFunction()) {
-            val irLambdaReference = expression.statements.filterIsInstance<IrFunctionReference>().firstOrNull()
-            return irLambdaReference?.symbol?.owner?.body?.accept(this, data) ?: false
-        }
-        if (expression is IrReturnableBlock) {
-            expression.inlineFunctionSymbol?.owner?.let { return isMarkedAsCompileTime(it) || visitStatements(it.body!!.statements, data) }
-        }
         return visitStatements(expression.statements, data)
     }
 
