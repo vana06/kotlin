@@ -226,6 +226,32 @@ private class SignatureVisitor : BasicVisitor() {
             return@all isMarkedAsCompileTime(catchParameterIrClass) || isMarkedAsEvaluateIntrinsic(catchParameterIrClass)
         }
     }
+
+    override fun visitBlock(expression: IrBlock, data: Nothing?): Boolean {
+        if (expression.origin == IrStatementOrigin.SAFE_CALL) {
+            val variable = expression.statements[0] as IrVariable
+            val varInit = variable.initializer?.accept(this, data) ?: true
+            fun checkExpression(expression: IrExpression?): Boolean {
+                return when (expression) {
+                    is IrGetValue -> expression.symbol.owner.name == variable.name
+                    else -> expression?.accept(this, data) ?: true
+                }
+            }
+
+            fun checkIrCall(irCall: IrCall): Boolean {
+                val dispatchReceiver = checkExpression(irCall.dispatchReceiver)
+                val extensionReceiver = checkExpression(irCall.extensionReceiver)
+                (0 until irCall.valueArgumentsCount).forEach { if (!checkExpression(irCall.getValueArgument(it))) return false }
+                return dispatchReceiver && extensionReceiver
+            }
+
+            val firstCondition = (expression.statements[1] as IrWhen).branches[0].condition as IrCall
+            val secondResult = (expression.statements[1] as IrWhen).branches[1].result as IrCall
+
+            return varInit && checkIrCall(firstCondition) && checkIrCall(secondResult)
+        }
+        return false
+    }
 }
 
 /**
