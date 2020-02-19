@@ -351,4 +351,11 @@ private class BodyVisitor : BasicVisitor() {
     override fun visitThrow(expression: IrThrow, data: Nothing?): Boolean {
         return expression.value.accept(this, data)
     }
+
+    override fun visitComposite(expression: IrComposite, data: Nothing?): Boolean {
+        if (expression.origin == IrStatementOrigin.DESTRUCTURING_DECLARATION) {
+            return visitStatements(expression.statements, data)
+        }
+        return false
+    }
 }
