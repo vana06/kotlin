@@ -138,6 +138,10 @@ private open class BasicVisitor(containingDeclaration: String = "") : IrElementV
         return expression.elements.any { it.accept(this, data) }
     }
 
+    override fun visitSpreadElement(spread: IrSpreadElement, data: Nothing?): Boolean {
+        return spread.expression.accept(this, data)
+    }
+
     override fun visitComposite(expression: IrComposite, data: Nothing?): Boolean {
         if (expression.origin == IrStatementOrigin.DESTRUCTURING_DECLARATION) {
             return visitStatements(expression.statements, data)
