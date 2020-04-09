@@ -62,9 +62,10 @@ class CompileTimeCalculationLowering(val context: CommonBackendContext) : FileLo
 private open class BasicVisitor(containingDeclaration: String = "") : IrElementVisitor<Boolean, Nothing?> {
     private val callStack = mutableListOf<String>().apply { if (containingDeclaration.isNotEmpty()) add(containingDeclaration) }
 
-    private fun IrDeclaration.isMarkedAsCompileTime() = isMarkedWith(compileTimeAnnotation)
-    private fun IrDeclaration.isMarkedAsEvaluateIntrinsic() = isMarkedWith(evaluateIntrinsicAnnotation)
     private fun IrDeclaration.isContract() = isMarkedWith(contractsDslAnnotation)
+    private fun IrDeclaration.isMarkedAsEvaluateIntrinsic() = isMarkedWith(evaluateIntrinsicAnnotation)
+    private fun IrDeclaration.isMarkedAsCompileTime(): Boolean = isMarkedWith(compileTimeAnnotation) ||
+            (this is IrSimpleFunction && this.isFakeOverride && this.overriddenSymbols.any { it.owner.isMarkedAsCompileTime() })
 
     private fun IrDeclaration.isMarkedWith(annotation: FqName): Boolean {
         if (this is IrClass && this.isCompanion) return false
