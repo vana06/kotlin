@@ -224,6 +224,10 @@ private open class BasicVisitor(containingDeclaration: String = "") : IrElementV
         return loop.condition.accept(this, data) && (loop.body?.accept(this, data) ?: true)
     }
 
+    override fun visitDoWhileLoop(loop: IrDoWhileLoop, data: Nothing?): Boolean {
+        return loop.condition.accept(this, data) && (loop.body?.accept(this, data) ?: true)
+    }
+
     override fun visitTry(aTry: IrTry, data: Nothing?): Boolean {
         if (!aTry.tryResult.accept(this, data)) return false
         if (aTry.finallyExpression != null && aTry.finallyExpression?.accept(this, data) == false) return false
