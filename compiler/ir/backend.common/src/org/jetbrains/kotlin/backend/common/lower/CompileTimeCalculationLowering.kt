@@ -11,6 +11,7 @@ import org.jetbrains.kotlin.backend.common.interpreter.*
 import org.jetbrains.kotlin.backend.common.interpreter.builtins.compileTimeAnnotation
 import org.jetbrains.kotlin.backend.common.interpreter.builtins.contractsDslAnnotation
 import org.jetbrains.kotlin.backend.common.interpreter.builtins.evaluateIntrinsicAnnotation
+import org.jetbrains.kotlin.config.CommonConfigurationKeys
 import org.jetbrains.kotlin.config.LanguageFeature
 import org.jetbrains.kotlin.config.languageVersionSettings
 import org.jetbrains.kotlin.ir.IrElement
@@ -18,7 +19,6 @@ import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.expressions.*
-import org.jetbrains.kotlin.ir.expressions.impl.IrErrorExpressionImpl
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
@@ -26,15 +26,30 @@ import org.jetbrains.kotlin.ir.visitors.IrElementVisitor
 import org.jetbrains.kotlin.name.FqName
 
 class CompileTimeCalculationLowering(val context: CommonBackendContext) : FileLoweringPass {
+    private val isTest = context.configuration[CommonConfigurationKeys.MODULE_NAME] == "<test-module>"
+
     override fun lower(irFile: IrFile) {
         if (!context.configuration.languageVersionSettings.supportsFeature(LanguageFeature.CompileTimeCalculations)) return
-        irFile.transformChildren(Transformer(), null)
+        if (irFile.fileEntry.name.contains("/kotlin/libraries/")) return
+        irFile.transformChildren(Transformer(irFile), null)
     }
 
-    private inner class Transformer : IrElementTransformerVoid() {
+    private inner class Transformer(private val irFile: IrFile) : IrElementTransformerVoid() {
+        private fun IrExpression.report(original: IrExpression): IrExpression {
+            if (isTest) return this
+            val isError = this is IrErrorExpression
+            val message = when (this) {
+                is IrConst<*> -> this.value.toString()
+                is IrErrorExpression -> this.description
+                else -> TODO("unsupported type ${this::class.java}")
+            }
+            context.report(original, irFile, message, isError)
+            return if (this !is IrErrorExpression) this else original
+        }
+
         override fun visitCall(expression: IrCall): IrExpression {
             if (expression.accept(BasicVisitor(), null)) {
-                return IrInterpreter(context.ir.irModule).interpret(expression)
+                return IrInterpreter(context.ir.irModule).interpret(expression).report(expression)
             }
             return expression
         }
@@ -44,12 +59,13 @@ class CompileTimeCalculationLowering(val context: CommonBackendContext) : FileLo
             val expression = initializer?.expression ?: return declaration
             val isCompileTimeComputable = expression.accept(BasicVisitor(declaration.descriptor.toString()), null)
             if (declaration.descriptor.isConst && !isCompileTimeComputable) {
-                initializer.expression = IrErrorExpressionImpl(
+                /*initializer.expression = IrErrorExpressionImpl(
                     declaration.startOffset, declaration.endOffset, declaration.type,
                     "Const property is used only with functions annotated as CompileTimeCalculation"
-                )
+                )*/
+                context.report(expression, irFile, "Const property is used only with functions annotated as CompileTimeCalculation", true)
             } else if (isCompileTimeComputable) {
-                initializer.expression = IrInterpreter(context.ir.irModule).interpret(expression)
+                initializer.expression = IrInterpreter(context.ir.irModule).interpret(expression).report(expression)
             }
             return declaration
         }
