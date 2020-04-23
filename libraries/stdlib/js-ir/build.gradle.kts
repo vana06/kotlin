@@ -77,7 +77,9 @@ val fullRuntimeSources by task<Sync> {
         "libraries/stdlib/js/src/generated/**",
 
         // JS-specific optimized version of emptyArray() already defined
-        "core/builtins/src/kotlin/ArrayIntrinsics.kt"
+        "core/builtins/src/kotlin/ArrayIntrinsics.kt",
+
+        "libraries/stdlib/common/src/kotlin/CompileTimeAnnotationsStdlib.kt"
     )
 
     sources.forEach { path ->
