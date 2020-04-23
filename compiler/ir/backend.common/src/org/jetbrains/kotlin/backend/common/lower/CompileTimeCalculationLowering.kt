@@ -18,6 +18,7 @@ import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
+import org.jetbrains.kotlin.ir.util.isLocal
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.IrElementVisitor
@@ -126,8 +127,9 @@ private open class BasicVisitor(containingDeclaration: String = "") : IrElementV
             val dispatchReceiverComputable = expression.dispatchReceiver?.accept(this, null) ?: true
             val extensionReceiverComputable = expression.extensionReceiver?.accept(this, null) ?: true
             if (!visitValueParameters(expression, null)) return false
+            val bodyComputable = if (expression.symbol.owner.isLocal) expression.symbol.owner.body?.accept(this, null) ?: true else true
 
-            return dispatchReceiverComputable && extensionReceiverComputable
+            return dispatchReceiverComputable && extensionReceiverComputable && bodyComputable
         }
 
         return false
