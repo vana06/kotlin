@@ -45,9 +45,10 @@ class Wrapper private constructor(
         // for example: - method 'get' in kotlin StringBuilder is actually 'charAt' in java StringBuilder
         val intrinsicName = irFunction.getEvaluateIntrinsicValue()
         if (intrinsicName?.isEmpty() == true) return null
-        val methodName = intrinsicName ?: propertyExplicitCall ?: propertyGetCall ?: irFunction.name.toString()
+        var methodName = intrinsicName ?: propertyExplicitCall ?: propertyGetCall ?: irFunction.name.toString()
 
         val methodType = irFunction.getMethodType()
+        methodName = if (methodName == "<get-keys>") "keySet" else methodName // TODO fix this later
         return MethodHandles.lookup().findVirtual(receiverClass, methodName, methodType)
     }
 
