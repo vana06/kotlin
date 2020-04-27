@@ -23,6 +23,7 @@ object Snapshots : TemplateGroupBase() {
         include(CharSequences)
     } builder {
         doc { "Appends all ${f.element.pluralize()} to the given [destination] collection." }
+        annotation("""@CompileTimeCalculation""")
         returns("C")
         typeParam("C : MutableCollection<in T>")
         body {
@@ -46,6 +47,7 @@ object Snapshots : TemplateGroupBase() {
             The returned set preserves the element iteration order of the original ${f.collection}.
             """
         }
+        annotation("""@CompileTimeCalculation""")
         returns("Set<T>")
         body(Iterables) {
             """
@@ -117,6 +119,7 @@ object Snapshots : TemplateGroupBase() {
         include(Collections, CharSequences)
     } builder {
         doc { "Returns a new [MutableList] filled with all ${f.element.pluralize()} of this ${f.collection}." }
+        annotation("""@CompileTimeCalculation""")
         returns("MutableList<T>")
         body { "return toCollection(ArrayList<T>())" }
         body(Iterables) {
@@ -143,6 +146,7 @@ object Snapshots : TemplateGroupBase() {
         include(Maps, CharSequences)
     } builder {
         doc { "Returns a [List] containing all ${f.element.pluralize()}." }
+        annotation("""@CompileTimeCalculation""")
         returns("List<T>")
         body { "return this.toMutableList().optimizeReadOnlyList()" }
         body(Iterables) {
