@@ -99,6 +99,7 @@ public inline fun <K, V, R, C : MutableCollection<in R>> Map<out K, V>.mapTo(des
  * 
  * @sample samples.collections.Collections.Aggregates.all
  */
+@CompileTimeCalculation
 public inline fun <K, V> Map<out K, V>.all(predicate: (Map.Entry<K, V>) -> Boolean): Boolean {
     if (isEmpty()) return true
     for (element in this) if (!predicate(element)) return false
@@ -110,6 +111,7 @@ public inline fun <K, V> Map<out K, V>.all(predicate: (Map.Entry<K, V>) -> Boole
  * 
  * @sample samples.collections.Collections.Aggregates.any
  */
+@CompileTimeCalculation
 public fun <K, V> Map<out K, V>.any(): Boolean {
     return !isEmpty()
 }
@@ -119,6 +121,7 @@ public fun <K, V> Map<out K, V>.any(): Boolean {
  * 
  * @sample samples.collections.Collections.Aggregates.anyWithPredicate
  */
+@CompileTimeCalculation
 public inline fun <K, V> Map<out K, V>.any(predicate: (Map.Entry<K, V>) -> Boolean): Boolean {
     if (isEmpty()) return false
     for (element in this) if (predicate(element)) return true
@@ -128,6 +131,7 @@ public inline fun <K, V> Map<out K, V>.any(predicate: (Map.Entry<K, V>) -> Boole
 /**
  * Returns the number of entries in this map.
  */
+@CompileTimeCalculation
 @kotlin.internal.InlineOnly
 public inline fun <K, V> Map<out K, V>.count(): Int {
     return size
@@ -136,6 +140,7 @@ public inline fun <K, V> Map<out K, V>.count(): Int {
 /**
  * Returns the number of entries matching the given [predicate].
  */
+@CompileTimeCalculation
 public inline fun <K, V> Map<out K, V>.count(predicate: (Map.Entry<K, V>) -> Boolean): Int {
     if (isEmpty()) return 0
     var count = 0
@@ -146,6 +151,7 @@ public inline fun <K, V> Map<out K, V>.count(predicate: (Map.Entry<K, V>) -> Boo
 /**
  * Performs the given [action] on each entry.
  */
+@CompileTimeCalculation
 @kotlin.internal.HidesMembers
 public inline fun <K, V> Map<out K, V>.forEach(action: (Map.Entry<K, V>) -> Unit): Unit {
     for (element in this) action(element)
@@ -156,6 +162,7 @@ public inline fun <K, V> Map<out K, V>.forEach(action: (Map.Entry<K, V>) -> Unit
  * 
  * @sample samples.collections.Collections.Aggregates.maxBy
  */
+@CompileTimeCalculation
 @kotlin.internal.InlineOnly
 public inline fun <K, V, R : Comparable<R>> Map<out K, V>.maxBy(selector: (Map.Entry<K, V>) -> R): Map.Entry<K, V>? {
     return entries.maxBy(selector)
@@ -164,6 +171,7 @@ public inline fun <K, V, R : Comparable<R>> Map<out K, V>.maxBy(selector: (Map.E
 /**
  * Returns the first entry having the largest value according to the provided [comparator] or `null` if there are no entries.
  */
+@CompileTimeCalculation
 @kotlin.internal.InlineOnly
 public inline fun <K, V> Map<out K, V>.maxWith(comparator: Comparator<in Map.Entry<K, V>>): Map.Entry<K, V>? {
     return entries.maxWith(comparator)
@@ -174,6 +182,7 @@ public inline fun <K, V> Map<out K, V>.maxWith(comparator: Comparator<in Map.Ent
  * 
  * @sample samples.collections.Collections.Aggregates.minBy
  */
+@CompileTimeCalculation
 public inline fun <K, V, R : Comparable<R>> Map<out K, V>.minBy(selector: (Map.Entry<K, V>) -> R): Map.Entry<K, V>? {
     return entries.minBy(selector)
 }
@@ -181,6 +190,7 @@ public inline fun <K, V, R : Comparable<R>> Map<out K, V>.minBy(selector: (Map.E
 /**
  * Returns the first entry having the smallest value according to the provided [comparator] or `null` if there are no entries.
  */
+@CompileTimeCalculation
 public fun <K, V> Map<out K, V>.minWith(comparator: Comparator<in Map.Entry<K, V>>): Map.Entry<K, V>? {
     return entries.minWith(comparator)
 }
@@ -190,6 +200,7 @@ public fun <K, V> Map<out K, V>.minWith(comparator: Comparator<in Map.Entry<K, V
  * 
  * @sample samples.collections.Collections.Aggregates.none
  */
+@CompileTimeCalculation
 public fun <K, V> Map<out K, V>.none(): Boolean {
     return isEmpty()
 }
@@ -199,6 +210,7 @@ public fun <K, V> Map<out K, V>.none(): Boolean {
  * 
  * @sample samples.collections.Collections.Aggregates.noneWithPredicate
  */
+@CompileTimeCalculation
 public inline fun <K, V> Map<out K, V>.none(predicate: (Map.Entry<K, V>) -> Boolean): Boolean {
     if (isEmpty()) return true
     for (element in this) if (predicate(element)) return false
@@ -209,6 +221,7 @@ public inline fun <K, V> Map<out K, V>.none(predicate: (Map.Entry<K, V>) -> Bool
  * Performs the given [action] on each entry and returns the map itself afterwards.
  */
 @SinceKotlin("1.1")
+@CompileTimeCalculation
 public inline fun <K, V, M : Map<out K, V>> M.onEach(action: (Map.Entry<K, V>) -> Unit): M {
     return apply { for (element in this) action(element) }
 }

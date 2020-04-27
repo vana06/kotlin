@@ -1593,6 +1593,7 @@ public infix fun <T> Iterable<T>.union(other: Iterable<T>): Set<T> {
  * 
  * @sample samples.collections.Collections.Aggregates.all
  */
+@CompileTimeCalculation
 public inline fun <T> Iterable<T>.all(predicate: (T) -> Boolean): Boolean {
     if (this is Collection && isEmpty()) return true
     for (element in this) if (!predicate(element)) return false
@@ -1604,6 +1605,7 @@ public inline fun <T> Iterable<T>.all(predicate: (T) -> Boolean): Boolean {
  * 
  * @sample samples.collections.Collections.Aggregates.any
  */
+@CompileTimeCalculation
 public fun <T> Iterable<T>.any(): Boolean {
     if (this is Collection) return !isEmpty()
     return iterator().hasNext()
@@ -1614,6 +1616,7 @@ public fun <T> Iterable<T>.any(): Boolean {
  * 
  * @sample samples.collections.Collections.Aggregates.anyWithPredicate
  */
+@CompileTimeCalculation
 public inline fun <T> Iterable<T>.any(predicate: (T) -> Boolean): Boolean {
     if (this is Collection && isEmpty()) return false
     for (element in this) if (predicate(element)) return true
@@ -1623,6 +1626,7 @@ public inline fun <T> Iterable<T>.any(predicate: (T) -> Boolean): Boolean {
 /**
  * Returns the number of elements in this collection.
  */
+@CompileTimeCalculation
 public fun <T> Iterable<T>.count(): Int {
     if (this is Collection) return size
     var count = 0
@@ -1633,6 +1637,7 @@ public fun <T> Iterable<T>.count(): Int {
 /**
  * Returns the number of elements in this collection.
  */
+@CompileTimeCalculation
 @kotlin.internal.InlineOnly
 public inline fun <T> Collection<T>.count(): Int {
     return size
@@ -1641,6 +1646,7 @@ public inline fun <T> Collection<T>.count(): Int {
 /**
  * Returns the number of elements matching the given [predicate].
  */
+@CompileTimeCalculation
 public inline fun <T> Iterable<T>.count(predicate: (T) -> Boolean): Int {
     if (this is Collection && isEmpty()) return 0
     var count = 0
@@ -1651,6 +1657,7 @@ public inline fun <T> Iterable<T>.count(predicate: (T) -> Boolean): Int {
 /**
  * Accumulates value starting with [initial] value and applying [operation] from left to right to current accumulator value and each element.
  */
+@CompileTimeCalculation
 public inline fun <T, R> Iterable<T>.fold(initial: R, operation: (acc: R, T) -> R): R {
     var accumulator = initial
     for (element in this) accumulator = operation(accumulator, element)
@@ -1663,6 +1670,7 @@ public inline fun <T, R> Iterable<T>.fold(initial: R, operation: (acc: R, T) -> 
  * @param [operation] function that takes the index of an element, current accumulator value
  * and the element itself, and calculates the next accumulator value.
  */
+@CompileTimeCalculation
 public inline fun <T, R> Iterable<T>.foldIndexed(initial: R, operation: (index: Int, acc: R, T) -> R): R {
     var index = 0
     var accumulator = initial
@@ -1673,6 +1681,7 @@ public inline fun <T, R> Iterable<T>.foldIndexed(initial: R, operation: (index: 
 /**
  * Accumulates value starting with [initial] value and applying [operation] from right to left to each element and current accumulator value.
  */
+@CompileTimeCalculation
 public inline fun <T, R> List<T>.foldRight(initial: R, operation: (T, acc: R) -> R): R {
     var accumulator = initial
     if (!isEmpty()) {
@@ -1690,6 +1699,7 @@ public inline fun <T, R> List<T>.foldRight(initial: R, operation: (T, acc: R) ->
  * @param [operation] function that takes the index of an element, the element itself
  * and current accumulator value, and calculates the next accumulator value.
  */
+@CompileTimeCalculation
 public inline fun <T, R> List<T>.foldRightIndexed(initial: R, operation: (index: Int, T, acc: R) -> R): R {
     var accumulator = initial
     if (!isEmpty()) {
@@ -1705,6 +1715,7 @@ public inline fun <T, R> List<T>.foldRightIndexed(initial: R, operation: (index:
 /**
  * Performs the given [action] on each element.
  */
+@CompileTimeCalculation
 @kotlin.internal.HidesMembers
 public inline fun <T> Iterable<T>.forEach(action: (T) -> Unit): Unit {
     for (element in this) action(element)
@@ -1715,6 +1726,7 @@ public inline fun <T> Iterable<T>.forEach(action: (T) -> Unit): Unit {
  * @param [action] function that takes the index of an element and the element itself
  * and performs the desired action on the element.
  */
+@CompileTimeCalculation
 public inline fun <T> Iterable<T>.forEachIndexed(action: (index: Int, T) -> Unit): Unit {
     var index = 0
     for (item in this) action(checkIndexOverflow(index++), item)
@@ -1726,6 +1738,7 @@ public inline fun <T> Iterable<T>.forEachIndexed(action: (index: Int, T) -> Unit
  * If any of elements is `NaN` returns `NaN`.
  */
 @SinceKotlin("1.1")
+@CompileTimeCalculation
 public fun Iterable<Double>.max(): Double? {
     val iterator = iterator()
     if (!iterator.hasNext()) return null
@@ -1745,6 +1758,7 @@ public fun Iterable<Double>.max(): Double? {
  * If any of elements is `NaN` returns `NaN`.
  */
 @SinceKotlin("1.1")
+@CompileTimeCalculation
 public fun Iterable<Float>.max(): Float? {
     val iterator = iterator()
     if (!iterator.hasNext()) return null
@@ -1761,6 +1775,7 @@ public fun Iterable<Float>.max(): Float? {
 /**
  * Returns the largest element or `null` if there are no elements.
  */
+@CompileTimeCalculation
 public fun <T : Comparable<T>> Iterable<T>.max(): T? {
     val iterator = iterator()
     if (!iterator.hasNext()) return null
@@ -1777,6 +1792,7 @@ public fun <T : Comparable<T>> Iterable<T>.max(): T? {
  * 
  * @sample samples.collections.Collections.Aggregates.maxBy
  */
+@CompileTimeCalculation
 public inline fun <T, R : Comparable<R>> Iterable<T>.maxBy(selector: (T) -> R): T? {
     val iterator = iterator()
     if (!iterator.hasNext()) return null
@@ -1797,6 +1813,7 @@ public inline fun <T, R : Comparable<R>> Iterable<T>.maxBy(selector: (T) -> R): 
 /**
  * Returns the first element having the largest value according to the provided [comparator] or `null` if there are no elements.
  */
+@CompileTimeCalculation
 public fun <T> Iterable<T>.maxWith(comparator: Comparator<in T>): T? {
     val iterator = iterator()
     if (!iterator.hasNext()) return null
@@ -1814,6 +1831,7 @@ public fun <T> Iterable<T>.maxWith(comparator: Comparator<in T>): T? {
  * If any of elements is `NaN` returns `NaN`.
  */
 @SinceKotlin("1.1")
+@CompileTimeCalculation
 public fun Iterable<Double>.min(): Double? {
     val iterator = iterator()
     if (!iterator.hasNext()) return null
@@ -1833,6 +1851,7 @@ public fun Iterable<Double>.min(): Double? {
  * If any of elements is `NaN` returns `NaN`.
  */
 @SinceKotlin("1.1")
+@CompileTimeCalculation
 public fun Iterable<Float>.min(): Float? {
     val iterator = iterator()
     if (!iterator.hasNext()) return null
@@ -1849,6 +1868,7 @@ public fun Iterable<Float>.min(): Float? {
 /**
  * Returns the smallest element or `null` if there are no elements.
  */
+@CompileTimeCalculation
 public fun <T : Comparable<T>> Iterable<T>.min(): T? {
     val iterator = iterator()
     if (!iterator.hasNext()) return null
@@ -1865,6 +1885,7 @@ public fun <T : Comparable<T>> Iterable<T>.min(): T? {
  * 
  * @sample samples.collections.Collections.Aggregates.minBy
  */
+@CompileTimeCalculation
 public inline fun <T, R : Comparable<R>> Iterable<T>.minBy(selector: (T) -> R): T? {
     val iterator = iterator()
     if (!iterator.hasNext()) return null
@@ -1885,6 +1906,7 @@ public inline fun <T, R : Comparable<R>> Iterable<T>.minBy(selector: (T) -> R): 
 /**
  * Returns the first element having the smallest value according to the provided [comparator] or `null` if there are no elements.
  */
+@CompileTimeCalculation
 public fun <T> Iterable<T>.minWith(comparator: Comparator<in T>): T? {
     val iterator = iterator()
     if (!iterator.hasNext()) return null
@@ -1901,6 +1923,7 @@ public fun <T> Iterable<T>.minWith(comparator: Comparator<in T>): T? {
  * 
  * @sample samples.collections.Collections.Aggregates.none
  */
+@CompileTimeCalculation
 public fun <T> Iterable<T>.none(): Boolean {
     if (this is Collection) return isEmpty()
     return !iterator().hasNext()
@@ -1911,6 +1934,7 @@ public fun <T> Iterable<T>.none(): Boolean {
  * 
  * @sample samples.collections.Collections.Aggregates.noneWithPredicate
  */
+@CompileTimeCalculation
 public inline fun <T> Iterable<T>.none(predicate: (T) -> Boolean): Boolean {
     if (this is Collection && isEmpty()) return true
     for (element in this) if (predicate(element)) return false
@@ -1921,6 +1945,7 @@ public inline fun <T> Iterable<T>.none(predicate: (T) -> Boolean): Boolean {
  * Performs the given [action] on each element and returns the collection itself afterwards.
  */
 @SinceKotlin("1.1")
+@CompileTimeCalculation
 public inline fun <T, C : Iterable<T>> C.onEach(action: (T) -> Unit): C {
     return apply { for (element in this) action(element) }
 }
@@ -1930,6 +1955,7 @@ public inline fun <T, C : Iterable<T>> C.onEach(action: (T) -> Unit): C {
  * 
  * @sample samples.collections.Collections.Aggregates.reduce
  */
+@CompileTimeCalculation
 public inline fun <S, T : S> Iterable<T>.reduce(operation: (acc: S, T) -> S): S {
     val iterator = this.iterator()
     if (!iterator.hasNext()) throw UnsupportedOperationException("Empty collection can't be reduced.")
@@ -1948,6 +1974,7 @@ public inline fun <S, T : S> Iterable<T>.reduce(operation: (acc: S, T) -> S): S 
  * 
  * @sample samples.collections.Collections.Aggregates.reduce
  */
+@CompileTimeCalculation
 public inline fun <S, T : S> Iterable<T>.reduceIndexed(operation: (index: Int, acc: S, T) -> S): S {
     val iterator = this.iterator()
     if (!iterator.hasNext()) throw UnsupportedOperationException("Empty collection can't be reduced.")
@@ -1969,6 +1996,7 @@ public inline fun <S, T : S> Iterable<T>.reduceIndexed(operation: (index: Int, a
  * @sample samples.collections.Collections.Aggregates.reduceOrNull
  */
 @SinceKotlin("1.4")
+@CompileTimeCalculation
 public inline fun <S, T : S> Iterable<T>.reduceIndexedOrNull(operation: (index: Int, acc: S, T) -> S): S? {
     val iterator = this.iterator()
     if (!iterator.hasNext()) return null
@@ -1987,6 +2015,7 @@ public inline fun <S, T : S> Iterable<T>.reduceIndexedOrNull(operation: (index: 
  */
 @SinceKotlin("1.3")
 @ExperimentalStdlibApi
+@CompileTimeCalculation
 public inline fun <S, T : S> Iterable<T>.reduceOrNull(operation: (acc: S, T) -> S): S? {
     val iterator = this.iterator()
     if (!iterator.hasNext()) return null
@@ -2002,6 +2031,7 @@ public inline fun <S, T : S> Iterable<T>.reduceOrNull(operation: (acc: S, T) -> 
  * 
  * @sample samples.collections.Collections.Aggregates.reduceRight
  */
+@CompileTimeCalculation
 public inline fun <S, T : S> List<T>.reduceRight(operation: (T, acc: S) -> S): S {
     val iterator = listIterator(size)
     if (!iterator.hasPrevious())
@@ -2021,6 +2051,7 @@ public inline fun <S, T : S> List<T>.reduceRight(operation: (T, acc: S) -> S): S
  * 
  * @sample samples.collections.Collections.Aggregates.reduceRight
  */
+@CompileTimeCalculation
 public inline fun <S, T : S> List<T>.reduceRightIndexed(operation: (index: Int, T, acc: S) -> S): S {
     val iterator = listIterator(size)
     if (!iterator.hasPrevious())
@@ -2043,6 +2074,7 @@ public inline fun <S, T : S> List<T>.reduceRightIndexed(operation: (index: Int, 
  * @sample samples.collections.Collections.Aggregates.reduceRightOrNull
  */
 @SinceKotlin("1.4")
+@CompileTimeCalculation
 public inline fun <S, T : S> List<T>.reduceRightIndexedOrNull(operation: (index: Int, T, acc: S) -> S): S? {
     val iterator = listIterator(size)
     if (!iterator.hasPrevious())
@@ -2062,6 +2094,7 @@ public inline fun <S, T : S> List<T>.reduceRightIndexedOrNull(operation: (index:
  */
 @SinceKotlin("1.3")
 @ExperimentalStdlibApi
+@CompileTimeCalculation
 public inline fun <S, T : S> List<T>.reduceRightOrNull(operation: (T, acc: S) -> S): S? {
     val iterator = listIterator(size)
     if (!iterator.hasPrevious())
@@ -2180,6 +2213,7 @@ public inline fun <S, T : S> Iterable<T>.scanReduceIndexed(operation: (index: In
 /**
  * Returns the sum of all values produced by [selector] function applied to each element in the collection.
  */
+@CompileTimeCalculation
 public inline fun <T> Iterable<T>.sumBy(selector: (T) -> Int): Int {
     var sum: Int = 0
     for (element in this) {
@@ -2191,6 +2225,7 @@ public inline fun <T> Iterable<T>.sumBy(selector: (T) -> Int): Int {
 /**
  * Returns the sum of all values produced by [selector] function applied to each element in the collection.
  */
+@CompileTimeCalculation
 public inline fun <T> Iterable<T>.sumByDouble(selector: (T) -> Double): Double {
     var sum: Double = 0.0
     for (element in this) {
