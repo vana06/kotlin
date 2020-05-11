@@ -43,3 +43,22 @@ const val concat6 = "String concatenation example with B class, where toString i
 const val concat7 = "String concatenation example with B class and explicit toString call: ${B().toString()}"
 const val concat8 = "String concatenation example with C class, where toString isn't present; is it correct: ${checkToStringCorrectness(C(), 'C')}"
 const val concat9 = "String concatenation example with D class, where toString is taken from Any; is it correct: ${checkToStringCorrectness(D(), 'D')}"
+
+const val concat10 = "String plus example with A class: " + A()
+const val concat11 = "String plus example with B class, where toString is FAKE_OVERRIDDEN: " + B()
+
+const val concatLambda1 = "" + fun(): String = ""
+const val concatLambda2 = "" + (fun(): String = "").toString()
+const val concatLambda3 = "" + fun(): String = "Some string"
+const val concatLambda4 = "" + fun(i: Int): String = ""
+const val concatLambda5 = "" + fun(i: Int?): String? = ""
+const val concatLambda6 = "" + { i: Int -> "" }
+const val concatLambda7 = "" + {  }
+const val concatLambda8 = "" + { i: Int, b: Double, c: String ->  }
+const val concatLambda9 = "".let {
+    val lambdaWith: Double.(Int) -> String = { "A" }
+    lambdaWith.toString()
+}
+
+const val extensionPlus1 = "Null as string = " + null
+const val extensionPlus2 = "Null as string = ${null.toString()}"
