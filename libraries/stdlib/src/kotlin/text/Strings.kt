@@ -5,7 +5,6 @@
 
 @file:kotlin.jvm.JvmMultifileClass
 @file:kotlin.jvm.JvmName("StringsKt")
-@file:Suppress("UNRESOLVED_REFERENCE")  // used here because CompileTimeCalculation annotation is unresolved
 
 package kotlin.text
 
