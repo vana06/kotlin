@@ -21,6 +21,7 @@ import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
+import org.jetbrains.kotlin.ir.util.IdSignature
 import org.jetbrains.kotlin.ir.util.fqNameWhenAvailable
 import org.jetbrains.kotlin.ir.util.isLocal
 import org.jetbrains.kotlin.ir.util.statements
@@ -30,6 +31,7 @@ import org.jetbrains.kotlin.name.FqName
 
 class CompileTimeCalculationLowering(val context: CommonBackendContext) : FileLoweringPass {
     private val isTest = context.configuration[CommonConfigurationKeys.MODULE_NAME] == "<test-module>"
+    private val bodyMap = context.configuration[CommonConfigurationKeys.IR_BODY_MAP] as? Map<IdSignature, IrBody> ?: emptyMap()
 
     override fun lower(irFile: IrFile) {
         if (!context.configuration.languageVersionSettings.supportsFeature(LanguageFeature.CompileTimeCalculations)) return
@@ -52,7 +54,7 @@ class CompileTimeCalculationLowering(val context: CommonBackendContext) : FileLo
 
         override fun visitCall(expression: IrCall): IrExpression {
             if (expression.accept(BasicVisitor(), null)) {
-                return IrInterpreter(context.ir.irModule).interpret(expression).report(expression)
+                return IrInterpreter(context.ir.irModule, bodyMap).interpret(expression).report(expression)
             }
             return expression
         }
@@ -65,7 +67,7 @@ class CompileTimeCalculationLowering(val context: CommonBackendContext) : FileLo
             if (declaration.descriptor.isConst && !isCompileTimeComputable) {
                 context.report(expression, irFile, "Const property is used only with functions annotated as CompileTimeCalculation", true)
             } else if (isCompileTimeComputable) {
-                initializer.expression = IrInterpreter(context.ir.irModule).interpret(expression).report(expression)
+                initializer.expression = IrInterpreter(context.ir.irModule, bodyMap).interpret(expression).report(expression)
             }
             return declaration
         }
@@ -233,7 +235,8 @@ private open class BasicVisitor(containingDeclaration: String = "") : IrElementV
         return when (expression.operator) {
             IrTypeOperator.INSTANCEOF, IrTypeOperator.NOT_INSTANCEOF,
             IrTypeOperator.IMPLICIT_COERCION_TO_UNIT,
-            IrTypeOperator.CAST, IrTypeOperator.IMPLICIT_CAST, IrTypeOperator.SAFE_CAST -> expression.argument.accept(this, data)
+            IrTypeOperator.CAST, IrTypeOperator.IMPLICIT_CAST, IrTypeOperator.SAFE_CAST,
+            IrTypeOperator.IMPLICIT_NOTNULL -> expression.argument.accept(this, data)
             IrTypeOperator.IMPLICIT_DYNAMIC_CAST -> false
             else -> false
         }
