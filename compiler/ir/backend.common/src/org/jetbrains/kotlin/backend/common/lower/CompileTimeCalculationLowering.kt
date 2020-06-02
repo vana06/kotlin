@@ -21,6 +21,7 @@ import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 class CompileTimeCalculationLowering(val context: CommonBackendContext) : FileLoweringPass {
     private val isTest = context.configuration[CommonConfigurationKeys.MODULE_NAME] == "<test-module>"
     private val bodyMap = context.configuration[CommonConfigurationKeys.IR_BODY_MAP] as? Map<IdSignature, IrBody> ?: emptyMap()
+    private val interpreter = IrInterpreter(context.ir.irModule, bodyMap)
 
     override fun lower(irFile: IrFile) {
         if (!context.configuration.languageVersionSettings.supportsFeature(LanguageFeature.CompileTimeCalculations)) return
@@ -43,7 +44,7 @@ class CompileTimeCalculationLowering(val context: CommonBackendContext) : FileLo
 
         override fun visitCall(expression: IrCall): IrExpression {
             if (expression.accept(IrCompileTimeChecker(), null)) {
-                return IrInterpreter(context.ir.irModule, bodyMap).interpret(expression).report(expression)
+                return interpreter.interpret(expression).report(expression)
             }
             return expression
         }
@@ -58,7 +59,7 @@ class CompileTimeCalculationLowering(val context: CommonBackendContext) : FileLo
             if (isConst && !isCompileTimeComputable) {
                 context.report(expression, irFile, "Const property is used only with functions annotated as CompileTimeCalculation", true)
             } else if (isCompileTimeComputable) {
-                initializer.expression = IrInterpreter(context.ir.irModule, bodyMap).interpret(expression).report(expression)
+                initializer.expression = interpreter.interpret(expression).report(expression)
             }
             return declaration
         }
