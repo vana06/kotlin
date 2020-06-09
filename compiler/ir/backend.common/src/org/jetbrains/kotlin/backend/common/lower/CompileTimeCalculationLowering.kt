@@ -54,7 +54,7 @@ class CompileTimeCalculationLowering(val context: CommonBackendContext) : FileLo
             val expression = initializer?.expression ?: return declaration
             if (expression is IrConst<*>) return declaration
             // must pass declaration symbol as initial containing declaration because of complex constructions such as try block or safe call
-            val isCompileTimeComputable = expression.accept(IrCompileTimeChecker(declaration.symbol), null)
+            val isCompileTimeComputable = expression.accept(IrCompileTimeChecker(declaration), null)
             val isConst = declaration.correspondingPropertySymbol?.owner?.isConst == true
             if (isConst && !isCompileTimeComputable) {
                 context.report(expression, irFile, "Const property is used only with functions annotated as CompileTimeCalculation", true)
