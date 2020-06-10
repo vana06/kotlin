@@ -74,6 +74,16 @@ private open class BasicVisitor(containingDeclaration: String = "") : IrElementV
         return (this.parent as? IrClass)?.isMarkedWith(annotation) ?: false
     }
 
+    private fun IrProperty?.isCompileTime(): Boolean {
+        if (this == null) return false
+        if (this.isConst) return true
+        if (this.isMarkedAsCompileTime()) return true
+
+        val backingField = this.backingField
+        val backingFieldExpression = backingField?.initializer?.expression as? IrGetValue
+        return backingFieldExpression?.origin == IrStatementOrigin.INITIALIZE_PROPERTY_FROM_PARAMETER
+    }
+
     private fun IrSymbol.withCallStack(block: () -> Boolean): Boolean {
         callStack += this.descriptor.toString()
         val result = block()
@@ -99,8 +109,7 @@ private open class BasicVisitor(containingDeclaration: String = "") : IrElementV
         if (expression.symbol.owner.isContract()) return false
 
         val property = (expression.symbol.owner as? IrFunctionImpl)?.correspondingPropertySymbol?.owner
-        val propertyIsConst = property?.isConst == true || property?.isMarkedAsCompileTime() == true
-        if (expression.symbol.owner.isMarkedAsCompileTime() || propertyIsConst) {
+        if (expression.symbol.owner.isMarkedAsCompileTime() || property.isCompileTime()) {
             val dispatchReceiverComputable = expression.dispatchReceiver?.accept(this, null) ?: true
             val extensionReceiverComputable = expression.extensionReceiver?.accept(this, null) ?: true
             if (!visitValueParameters(expression, null)) return false
