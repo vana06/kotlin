@@ -19,6 +19,8 @@ import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.ir.expressions.impl.IrErrorExpressionImpl
 import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.isArray
+import org.jetbrains.kotlin.ir.util.isPrimitiveArray
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.IrElementVisitor
@@ -149,6 +151,10 @@ private open class BasicVisitor : IrElementVisitor<Boolean, Nothing?> {
         }
     }
 
+    override fun visitInstanceInitializerCall(expression: IrInstanceInitializerCall, data: Nothing?): Boolean {
+        return isMarkedAsCompileTime(expression.classSymbol.owner)
+    }
+
     override fun <T> visitConst(expression: IrConst<T>, data: Nothing?): Boolean = true
 
     override fun visitWhen(expression: IrWhen, data: Nothing?): Boolean {
@@ -187,7 +193,8 @@ private class SignatureVisitor : BasicVisitor() {
 
     override fun visitBlock(expression: IrBlock, data: Nothing?): Boolean {
         return (expression is IrReturnableBlock && expression.inlineFunctionSymbol?.owner?.let { isMarkedAsCompileTime(it) } == true) ||
-                expression.isLambdaFunction()
+                expression.isLambdaFunction() ||
+                (expression !is IrReturnableBlock && (expression.type.isPrimitiveArray() || expression.type.isArray()))
     }
 
     override fun visitTry(aTry: IrTry, data: Nothing?): Boolean {
@@ -235,7 +242,7 @@ private class BodyVisitor : BasicVisitor() {
             return irLambdaReference?.symbol?.owner?.body?.accept(this, data) ?: false
         }
         if (expression is IrReturnableBlock) {
-            expression.inlineFunctionSymbol?.owner?.let { return isMarkedAsCompileTime(it) }
+            expression.inlineFunctionSymbol?.owner?.let { return isMarkedAsCompileTime(it) || visitStatements(it.body!!.statements, data) }
         }
         return visitStatements(expression.statements, data)
     }
