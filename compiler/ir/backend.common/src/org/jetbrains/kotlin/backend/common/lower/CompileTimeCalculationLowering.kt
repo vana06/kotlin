@@ -229,6 +229,7 @@ private class BodyVisitor : BasicVisitor() {
         // todo check argument
         return when (expression.operator) {
             IrTypeOperator.IMPLICIT_COERCION_TO_UNIT -> true
+            IrTypeOperator.IMPLICIT_DYNAMIC_CAST -> true
             IrTypeOperator.CAST -> true
             else -> false
         }
