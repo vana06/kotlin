@@ -37,8 +37,8 @@ class CompileTimeCalculationLowering(val context: CommonBackendContext) : FileLo
 
     private inner class Transformer(private val irFile: IrFile) : IrElementTransformerVoid() {
         private fun IrExpression.report(original: IrExpression): IrExpression {
-            if (isTest) return this
-            val isError = this is IrErrorExpression
+            if (this == original) return this
+            val isError = this is IrErrorExpression && isTest
             val message = when (this) {
                 is IrConst<*> -> this.value.toString()
                 is IrErrorExpression -> this.description
@@ -58,12 +58,9 @@ class CompileTimeCalculationLowering(val context: CommonBackendContext) : FileLo
         override fun visitField(declaration: IrField): IrStatement {
             val initializer = declaration.initializer
             val expression = initializer?.expression ?: return declaration
+            if (expression is IrConst<*>) return declaration
             val isCompileTimeComputable = expression.accept(BasicVisitor(declaration.descriptor.toString()), null)
             if (declaration.descriptor.isConst && !isCompileTimeComputable) {
-                /*initializer.expression = IrErrorExpressionImpl(
-                    declaration.startOffset, declaration.endOffset, declaration.type,
-                    "Const property is used only with functions annotated as CompileTimeCalculation"
-                )*/
                 context.report(expression, irFile, "Const property is used only with functions annotated as CompileTimeCalculation", true)
             } else if (isCompileTimeComputable) {
                 initializer.expression = IrInterpreter(context.ir.irModule).interpret(expression).report(expression)
