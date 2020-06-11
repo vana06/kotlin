@@ -10,6 +10,8 @@ import org.jetbrains.kotlin.backend.common.FileLoweringPass
 import org.jetbrains.kotlin.backend.common.interpreter.IrCompileTimeChecker
 import org.jetbrains.kotlin.backend.common.interpreter.*
 import org.jetbrains.kotlin.config.CommonConfigurationKeys
+import org.jetbrains.kotlin.config.LanguageFeature
+import org.jetbrains.kotlin.config.languageVersionSettings
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.expressions.*
@@ -22,6 +24,7 @@ class CompileTimeCalculationLowering(val context: CommonBackendContext) : FileLo
     private val interpreter = IrInterpreter(context.ir.irModule, bodyMap)
 
     override fun lower(irFile: IrFile) {
+        if (!context.configuration.languageVersionSettings.supportsFeature(LanguageFeature.CompileTimeCalculations)) return
         if (irFile.fileEntry.name.contains("/kotlin/libraries/")) return
         irFile.transformChildren(Transformer(irFile), null)
     }
