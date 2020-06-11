@@ -20,7 +20,7 @@ import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 
 class CompileTimeCalculationLowering(val context: CommonBackendContext) : FileLoweringPass {
     private val isTest = context.configuration[CommonConfigurationKeys.MODULE_NAME] == "<test-module>"
-    private val bodyMap = emptyMap<IdSignature, IrBody>()
+    private val bodyMap = context.configuration[CommonConfigurationKeys.IR_BODY_MAP] as? Map<IdSignature, IrBody> ?: emptyMap()
     private val interpreter = IrInterpreter(context.ir.irModule, bodyMap)
 
     override fun lower(irFile: IrFile) {
